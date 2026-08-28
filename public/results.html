@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Click BP — Vos documents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .hidden{ display:none !important; }
+  .final-cta{ text-align:center; margin-top:40px; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <div class="spinner"></div>
+  <div>Préparation de vos documents…</div>
+</div>
+
+<div id="errorScreen" class="loading-screen hidden">
+  <div class="alert error" style="max-width:480px;"><span id="errorMsg"></span></div>
+  <a href="index.html" class="btn btn-secondary">Retour à l'accueil</a>
+</div>
+
+<div id="resultsApp" class="app-shell hidden">
+  <div class="topbar">
+    <div class="brand"><span class="flag">🇲🇦</span> One Click BP</div>
+    <a class="logout-btn" href="index.html">🗂 Mes projets</a>
+  </div>
+
+  <div class="container" style="padding-top:32px;padding-bottom:60px;">
+    <div class="hero" style="padding:26px 32px;">
+      <h1 style="font-size:24px;">🎉 Votre business plan est prêt</h1>
+      <p>Retrouvez ci-dessous les trois espaces de votre dossier : entrepreneur, institution financière et aides à l'entrepreneuriat.</p>
+    </div>
+
+    <div class="spaces-grid" id="spacesGrid"></div>
+
+    <div class="final-cta">
+      <a href="index.html" class="btn btn-primary">🚀 Démarrer un nouveau projet</a>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/results.js"></script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Click BP — Génération en cours</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .hidden{ display:none !important; }
+  .proc-wrap{ max-width:680px; margin:0 auto; padding:60px 20px; }
+  .proc-header{ text-align:center; margin-bottom:36px; }
+  .proc-header h1{ font-size:26px; margin-bottom:8px; }
+  .proc-header p{ color:var(--muted); font-size:14.5px; }
+  .proc-footer{ text-align:center; margin-top:30px; }
+  #doneState, #bloqueState, #erreurState{ text-align:center; max-width:520px; margin:30px auto 0; }
+  #doneState .big-check{ font-size:48px; margin-bottom:12px; }
+  @keyframes pulse{ 0%,100%{ opacity:1; } 50%{ opacity:.55; } }
+  .gen-step.en_cours .gs-icon{ animation:pulse 1.1s ease infinite; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="flag">🇲🇦</span> One Click BP</div>
+  <div></div>
+</div>
+
+<div class="proc-wrap">
+  <div class="proc-header">
+    <h1>Génération de votre business plan</h1>
+    <p>Merci de patienter pendant que nous analysons votre projet et générons vos documents.</p>
+  </div>
+
+  <div id="checklist" class="gen-checklist"></div>
+
+  <div id="doneState" class="hidden">
+    <div class="big-check">✅</div>
+    <h2 style="font-size:20px;">Génération terminée !</h2>
+    <p style="color:var(--muted);margin-top:6px;">Redirection vers vos documents…</p>
+  </div>
+
+  <div id="bloqueState" class="hidden">
+    <div class="alert error"><span class="alert-icon">⛔</span><span id="bloqueMsg"></span></div>
+    <a href="#" id="bloqueBackBtn" class="btn btn-secondary">← Retour au récapitulatif</a>
+  </div>
+
+  <div id="erreurState" class="hidden">
+    <div class="alert error"><span class="alert-icon">⚠️</span><span id="erreurMsg"></span></div>
+    <button class="btn btn-primary" id="retryBtn">Réessayer</button>
+  </div>
+</div>
+
+<script type="module" src="js/processing.js"></script>
+</body>
+</html>

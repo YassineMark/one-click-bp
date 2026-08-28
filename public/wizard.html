@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>One Click BP — Nouveau projet</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+  .hidden{ display:none !important; }
+  .lang-help-box{
+    background:#EAF6FF; border:1px solid #B9DFFF; color:#175A8C; border-radius:12px; padding:16px 18px;
+    font-size:13.5px; line-height:1.6; margin-top:16px;
+  }
+  .autosave-note{ font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen" class="loading-screen">
+  <div class="spinner"></div>
+  <div>Chargement du formulaire…</div>
+</div>
+
+<div id="errorScreen" class="loading-screen hidden">
+  <div class="alert error" style="max-width:480px;"><span id="errorMsg">Une erreur est survenue.</span></div>
+  <a href="index.html" class="btn btn-secondary">Retour à l'accueil</a>
+</div>
+
+<div id="wizardApp" class="app-shell hidden">
+  <div class="topbar">
+    <div class="brand"><span class="flag">🇲🇦</span> One Click BP</div>
+    <div class="autosave-note" id="autosaveNote"></div>
+  </div>
+
+  <div class="wizard-mobile-progress">
+    <div class="mp-label"><span id="mpStepLabel">Étape 1</span><span id="mpStepCount">1 / 15</span></div>
+    <div class="mp-track"><div class="mp-fill" id="mpFill" style="width:0%"></div></div>
+  </div>
+
+  <div class="wizard-shell">
+    <aside class="wizard-sidebar">
+      <h2>Votre projet</h2>
+      <div class="step-list" id="stepList"></div>
+    </aside>
+
+    <main class="wizard-main">
+      <div id="stepContent"></div>
+
+      <div class="wizard-nav">
+        <button type="button" class="btn btn-secondary" id="prevBtn">← Précédent</button>
+        <button type="button" class="btn btn-primary" id="nextBtn">Suivant →</button>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script type="module" src="js/wizard.js"></script>
+</body>
+</html>

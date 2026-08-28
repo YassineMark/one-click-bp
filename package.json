@@ -1,0 +1,25 @@
+{
+  "name": "one-click-bp",
+  "version": "1.0.0",
+  "description": "Générateur de Business Plan pour le Maroc — parcours entrepreneur, banque et aides publiques",
+  "type": "module",
+  "private": true,
+  "main": "server/boot.js",
+  "scripts": {
+    "start": "node server/boot.js",
+    "dev": "node --watch server/boot.js"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.0",
+    "pdf-parse": "^1.1.1",
+    "pdfkit": "^0.15.0"
+  }
+}
