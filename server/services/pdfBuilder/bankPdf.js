@@ -1,7 +1,11 @@
 import PDFDocument from "pdfkit";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { fmtDH } from "../../utils/i18n.js";
 import { genererScenarios } from "../narrativeEngine.js";
 import { WIZARD_STEPS } from "../../config/wizardSchema.js";
+
+const LOGO_WHITE_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../public/img/logo-white.png");
 
 /**
  * Générateur du dossier PDF "Banque" (institution financière).
@@ -330,7 +334,11 @@ function drawCover(doc, bp, formData) {
   doc.rect(0, 0, width, height).fill(NAVY);
   doc.fillColor(EMERALD).rect(0, height * 0.46, width, 4).fill();
 
-  doc.fillColor("#C7D6EC").font("Helvetica-Bold").fontSize(10).text("ONE CLICK BP", 50, 56);
+  try {
+    doc.image(LOGO_WHITE_PATH, 50, 46, { width: 150 });
+  } catch {
+    doc.fillColor("#C7D6EC").font("Helvetica-Bold").fontSize(10).text("ONE CLICK BP", 50, 56);
+  }
 
   doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(24);
   doc.text("DOSSIER DE FINANCEMENT", 50, height * 0.26, { width: width - 100 });

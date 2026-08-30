@@ -46,6 +46,8 @@ button{ font-family:inherit; }
 @media (max-width: 768px){ .topbar{ padding:14px 18px; } }
 .topbar .brand{ display:flex; align-items:center; gap:10px; font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:18px; color:var(--navy); }
 .topbar .brand .flag{ font-size:20px; }
+.topbar .brand-logo{ height:28px; width:auto; display:block; }
+.auth-card .brand-row .brand-logo{ height:34px; width:auto; display:block; }
 .topbar .user{ display:flex; align-items:center; gap:12px; font-size:13.5px; color:var(--muted); }
 .topbar .logout-btn{
   border:1px solid var(--line); background:#fff; color:var(--navy2); padding:8px 14px;
