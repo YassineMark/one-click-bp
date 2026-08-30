@@ -261,8 +261,8 @@ export const WIZARD_STEPS = [
         path: "langueBusinessPlan", label: "Dans quelle langue souhaitez-vous recevoir votre business plan entrepreneur ?", type: "radio",
         options: [
           { value: "fr", label: "Français" },
-          { value: "ar", label: "العربية" },
-          { value: "darija", label: "Darija" },
+          { value: "en", label: "Anglais" },
+          { value: "darija", label: "الدارجة" },
         ],
         required: true, default: "fr",
         help: "Cette langue concerne uniquement les documents destinés à l'entrepreneur. Les documents pour les banques et les institutions d'aide sont toujours en français.",

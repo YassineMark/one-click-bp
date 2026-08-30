@@ -1,7 +1,7 @@
 import { fmtDH } from "../utils/i18n.js";
 
 /**
- * Contenu narratif multilingue (fr / ar / darija) du document Entrepreneur.
+ * Contenu narratif multilingue (fr / en / darija) du document Entrepreneur.
  * Centralisé ici pour que les générateurs Excel/PDF ne dupliquent pas (et ne
  * fassent pas diverger) le même discours métier. Les documents Banque/Aide
  * (toujours en français) utilisent uniquement les fonctions `*Fr` ou passent
@@ -34,18 +34,18 @@ export function genererResumeNarratif(formData, bp, lang) {
   const pctApport = pct(inputs.apport, inputs.investissements);
   const eligTexts = eligibilites.programmes.map((p) => ({ nom: p.nom, statut: p.statut }));
 
-  if (lang === "ar") {
+  if (lang === "en") {
     return [
-      `${nomProjet} هو مشروع لإنشاء مقاولة في قطاع ${secteur}، يقع في مدينة ${ville}، ويعتمد الشكل القانوني ${formeJuridique}.`,
-      `يتطلب المشروع استثماراً إجمالياً قدره ${fmtDH(inputs.investissements)}، يُموَّل بمساهمة شخصية قدرها ${fmtDH(inputs.apport)} (أي ${pctApport}% من الاستثمار) وقرض بنكي قدره ${fmtDH(inputs.credit)}.`,
-      `يرتفع رقم الأعمال المتوقع من ${fmtDH(cpc.ca[0])} في السنة الأولى إلى ${fmtDH(cpc.ca[2])} في السنة الثالثة، بمعدل نمو سنوي قدره ${inputs.croissance}%.`,
-      `الربح الصافي المتوقع: ${fmtDH(cpc.resultatNet[0])} (السنة 1)، ${fmtDH(cpc.resultatNet[1])} (السنة 2)، ${fmtDH(cpc.resultatNet[2])} (السنة 3).`,
+      `${nomProjet} is a business creation project in the ${secteur} sector, based in ${ville}, under the ${formeJuridique} legal form.`,
+      `Total investment required: ${fmtDH(inputs.investissements)}, financed by a personal contribution of ${fmtDH(inputs.apport)} (${pctApport}% of the investment) and a bank loan of ${fmtDH(inputs.credit)}.`,
+      `Forecast revenue grows from ${fmtDH(cpc.ca[0])} in Year 1 to ${fmtDH(cpc.ca[2])} in Year 3, with an average annual growth rate of ${inputs.croissance}%.`,
+      `Forecast net income: ${fmtDH(cpc.resultatNet[0])} (Year 1), ${fmtDH(cpc.resultatNet[1])} (Year 2), ${fmtDH(cpc.resultatNet[2])} (Year 3).`,
       ...eligTexts.map((e) =>
         e.statut === "eligible"
-          ? `المشروع مؤهل لبرنامج ${e.nom}.`
+          ? `The project is eligible for the ${e.nom} program.`
           : e.statut === "zone_grise"
-          ? `المشروع قد يكون مؤهلاً لبرنامج ${e.nom} بعد استكمال بعض المعطيات (انظر قسم الأهلية).`
-          : `المشروع غير مؤهل حالياً لبرنامج ${e.nom} حسب المعطيات المدخلة.`
+          ? `The project may become eligible for the ${e.nom} program once some additional information is completed (see the Eligibility section).`
+          : `The project is not currently eligible for the ${e.nom} program based on the data provided.`
       ),
     ];
   }
@@ -111,21 +111,21 @@ export function genererConseilsEntrepreneur(formData, bp, lang) {
   ];
   if (lang === "fr") return conseilsFr;
 
-  // Pour ar/darija : traduction fidèle du même contenu (pas de nouvelle information inventée).
+  // Pour en/darija : traduction fidèle du même contenu (pas de nouvelle information inventée).
   const dict = {
-    ar: [
-      `المعرف الموحد للمقاولة (ICE) : يجب الحصول عليه من المكتب المغربي للملكية الصناعية والتجارية (OMPIC) منذ التأسيس، وهو ضروري للفوترة والتصريحات الضريبية في ${inputs.ville}.`,
-      "الضريبة المهنية : تستفيد المقاولة الجديدة عادة من إعفاء لمدة 5 سنوات على التجهيزات الجديدة. يجب توقع أثرها ابتداءً من السنة السادسة.",
+    en: [
+      `Common Business Identifier (ICE): remember to obtain it from OMPIC as soon as the company is created — it is required for invoicing and tax filings in ${inputs.ville}.`,
+      "Professional Tax: a new business generally benefits from a 5-year exemption on new installations. Anticipate its impact starting from year 6.",
       ...(inputs.secteur === "Commerce"
-        ? ["قطاع التجارة يفرض غالباً آجال أداء سريعة للموردين (30-45 يوماً) بينما بعض الزبناء يطلبون آجالاً أطول. راقب دوران المخزون لتفادي ضغط على الخزينة.", "حسّن هامشك الإجمالي مع الأخذ بعين الاعتبار الضريبة على القيمة المضافة بنسبة 20% المطبقة على أغلب المنتجات."]
+        ? ["The retail sector often requires fast supplier payments (30-45 days) while some customers (wholesalers, large retailers) request longer terms. Monitor your stock turnover to avoid cash flow strain.", "Optimize your gross margin taking into account the 20% VAT applicable to most retailed products."]
         : inputs.secteur === "Services"
-        ? ["آجال أداء الزبناء طويلة هيكلياً بالمغرب (غالباً 60 إلى 90 يوماً). ضع نظاماً صارماً لمتابعة التحصيل.", "أغلب الخدمات خاضعة للضريبة على القيمة المضافة بنسبة 20% : تأكد من احتسابها في عروض أسعارك."]
+        ? ["Customer payment terms are structurally long in Morocco (often 60 to 90 days for B2B/public administration). Set up rigorous follow-up on outstanding payments.", "Most services are subject to 20% VAT: make sure to reflect it properly in your quotes and contracts."]
         : inputs.secteur === "Industrie"
-        ? ["الصناعة تتطلب عادة مخزوناً مهماً من المواد الأولية والمنتجات التامة : تفاوض على آجال موردين متلائمة مع دورة الإنتاج.", "توقع التكلفة الحقيقية للأجر (حوالي +20% بسبب CNSS/AMO) في كتلتك الأجرية التوقعية."]
-        : ["يستفيد القطاع الفلاحي من إعفاءات مهمة حسب رقم الأعمال. تحقق من أهليتك للنظام المطبق.", "نظراً لموسمية النشاط، كوّن احتياطياً كافياً من الخزينة لتغطية الفترات الضعيفة."]),
+        ? ["Industry generally requires a significant stock of raw materials and finished goods: negotiate supplier terms aligned with your production cycle.", "Anticipate the real employer cost (about +20% on gross salary, CNSS/AMO) in your projected payroll."]
+        : ["The agricultural sector benefits from significant exemptions (corporate tax and VAT depending on revenue): check your eligibility for the applicable regime.", "Since your activity is seasonal, build up a sufficient cash reserve to cover slow periods."]),
       inputs.formeJuridique === "Auto-entrepreneur"
-        ? "نظام المقاول الذاتي : ضريبة جزافية من 1% إلى 2% من رقم الأعمال حسب القطاع، مع الانتباه لسقف رقم الأعمال السنوي (500.000 درهم للتجارة/الصناعة، 200.000 درهم للخدمات)."
-        : `المحاسبة والالتزامات القانونية : بصفتكم ${inputs.formeJuridique}، محاسبة منتظمة وفق المدونة العامة للتوحيد المحاسبي وإيداع الحسابات السنوية لدى المديرية العامة للضرائب إلزاميان.`,
+        ? "Self-employed regime: flat tax of 1% to 2% of revenue depending on the sector, but watch the annual revenue cap (500,000 DH for trade/industry, 200,000 DH for services)."
+        : `Accounting & legal obligations: as a ${inputs.formeJuridique}, standardized accounting (CGNC) and filing annual financial statements with the DGI are mandatory.`,
     ],
     darija: [
       `المعرف الموحد ديال المقاولة (ICE) : خاصك تجيبو من OMPIC من ساعة التأسيس، ضروري باش تفاتوري وتصرح للضرائب فـ${inputs.ville}.`,
@@ -173,25 +173,25 @@ export const GUIDE_PEDAGOGIQUE = {
       "Sous-estimer les charges sociales patronales (CNSS/AMO).",
     ],
   },
-  ar: {
-    intro: "تعرض هذه الوثيقة مخطط أعمالكم بطريقة مبسطة يمكن فهمها حتى بدون معرفة مسبقة بالتدبير أو المحاسبة أو المالية.",
+  en: {
+    intro: "This document presents your Business Plan in a form designed to be understood even without prior knowledge of management, accounting, or finance.",
     commentLire: [
-      "كل ورقة تتعلق بموضوع معين : ابدأ بالملخص، ثم تصفح الأوراق بالترتيب.",
-      "المبالغ معبر عنها دائماً بالدرهم المغربي (DH) ما لم يُذكر خلاف ذلك.",
-      "الخلايا الغامقة الملونة تمثل مجاميع أو نتائج أساسية.",
-      "ورقة الفرضيات توضح، لكل رقم مهم، إن كان معطى أدخلتموه أو محسوباً تلقائياً أو تقديراً مرجعياً.",
+      "Each tab covers one theme: start with the Summary, then go through the tabs in order.",
+      "Amounts are always expressed in Moroccan Dirhams (DH) unless otherwise stated.",
+      "Bold, colored cells represent totals or key results.",
+      "The Assumptions tab shows, for each important figure, whether it comes from your own input, an automatic calculation, or a reference estimate.",
     ],
     glossaire: [
-      { terme: "رقم الأعمال", def: "مجموع المبيعات المحققة، قبل خصم التكاليف." },
-      { terme: "التكاليف", def: "مجموع المصاريف الضرورية لتسيير المقاولة." },
-      { terme: "الربح الصافي", def: "ما يتبقى بعد أداء جميع التكاليف والضرائب : الربح (أو الخسارة) الحقيقي." },
-      { terme: "الخزينة", def: "المال المتوفر فعلياً في الحساب البنكي للمقاولة في لحظة معينة." },
-      { terme: "الحاجة لرأس المال العامل", def: "المال الذي يجب تسبيقه قبل التوصل بأداء الزبناء." },
-      { terme: "عتبة الربحية", def: "الحد الأدنى لرقم الأعمال الواجب تحقيقه لتجنب الخسارة." },
-      { terme: "القدرة على التمويل الذاتي", def: "المال الذي تولده المقاولة بنفسها ويمكن استعماله لتسديد قرض أو إعادة الاستثمار." },
+      { terme: "Revenue (turnover)", def: "Total sales achieved, before deducting expenses." },
+      { terme: "Expenses", def: "All the spending needed to run the business." },
+      { terme: "Net income", def: "What remains once all expenses and taxes are paid: the real profit (or loss)." },
+      { terme: "Cash", def: "The money actually available in the business's bank account at a given moment." },
+      { terme: "Working capital requirement (WCR)", def: "The money you need to advance before your customers pay you." },
+      { terme: "Break-even point", def: "The minimum revenue you need to achieve to avoid losing money." },
+      { terme: "Self-financing capacity", def: "The money the business generates on its own, which can be used to repay a loan or reinvest." },
     ],
-    conseils: ["لا تعتبروا أبداً رقماً في هذه الوثيقة نهائياً : إنها توقعات يجب تعديلها مع التجربة.", "اعرضوا هذه الوثيقة على مختص (خبير محاسب، مستشار بنكي) قبل أي قرار مهم."],
-    erreurs: ["الخلط بين رقم الأعمال والربح.", "نسيان تخصيص خزينة احتياطية للفترات الضعيفة.", "التقليل من قيمة التحملات الاجتماعية للمشغل (CNSS/AMO)."],
+    conseils: ["Never treat a figure in this document as final: these are forecasts to be adjusted with experience.", "Show this document to a professional (chartered accountant, bank advisor) before any major decision."],
+    erreurs: ["Confusing revenue with profit.", "Forgetting to set aside cash for slow periods.", "Underestimating employer social contributions (CNSS/AMO)."],
   },
   darija: {
     intro: "هاد الوثيقة كتعرض مخطط الأعمال ديالكم بطريقة سهلة، يمكن تفهموها حتى إلا ما عندكمش معرفة قبلية بالتدبير أو المحاسبة.",

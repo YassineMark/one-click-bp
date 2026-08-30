@@ -17,7 +17,7 @@ function showApp() {
   resultsApp.classList.remove('hidden');
 }
 
-const LANGUE_LABELS = { fr: 'Français', ar: 'العربية', darija: 'Darija', en: 'English' };
+const LANGUE_LABELS = { fr: 'Français', en: 'Anglais', darija: 'الدارجة' };
 const STATUT_LABELS = { eligible: 'Éligible', non_eligible: 'Non éligible', zone_grise: 'Potentiellement éligible' };
 const STATUT_BADGE_CLASS = { eligible: 'ok', non_eligible: 'no', zone_grise: 'warn' };
 

@@ -44,27 +44,27 @@ function nbEmployesDepuisRH(rh = []) {
   return rh.reduce((total, poste) => total + num(poste.nombre, 1), 0);
 }
 
-// Sélectionne le texte dans la langue demandée (fr / ar / darija), avec repli sur le français.
+// Sélectionne le texte dans la langue demandée (fr / en / darija), avec repli sur le français.
 function tr(lang, variants) {
   return variants[lang] || variants.fr;
 }
 
 const LABELS = {
-  investissements: { fr: "Investissement total", ar: "إجمالي الاستثمار", darija: "مجموع الاستثمار" },
-  apport: { fr: "Apport personnel total", ar: "إجمالي المساهمة الشخصية", darija: "مجموع المساهمة الشخصية" },
-  credit: { fr: "Crédit bancaire souhaité", ar: "القرض البنكي المطلوب", darija: "القرض البنكي اللي بغيتي" },
-  autresFinancements: { fr: "Autres financements", ar: "تمويلات أخرى", darija: "تمويلات خرى" },
-  subventions: { fr: "Subventions envisagées", ar: "الإعانات المتوخاة", darija: "الإعانات المتوقعة" },
-  ca1: { fr: "Chiffre d'affaires Année 1", ar: "رقم الأعمال — السنة 1", darija: "رقم المعاملات — السنة 1" },
-  croissance: { fr: "Croissance annuelle du CA", ar: "معدل النمو السنوي لرقم الأعمال", darija: "معدل الزيادة السنوية ديال رقم المعاملات" },
-  chargesExtPct: { fr: "Charges externes (% du CA)", ar: "التكاليف الخارجية (% من رقم الأعمال)", darija: "المصاريف الخارجية (% من رقم المعاملات)" },
-  masseSalariale: { fr: "Masse salariale annuelle", ar: "الكتلة الأجرية السنوية", darija: "الأجور السنوية ديال الخدامة" },
-  nbEmployes: { fr: "Nombre d'employés", ar: "عدد المستخدمين", darija: "عدد الخدامة" },
-  dureeCredit: { fr: "Durée du crédit", ar: "مدة القرض", darija: "مدة القرض" },
-  tauxInteret: { fr: "Taux d'intérêt annuel", ar: "نسبة الفائدة السنوية", darija: "نسبة الفائدة ديال العام" },
-  delaiClients: { fr: "Délai de paiement clients", ar: "أجل أداء الزبناء", darija: "المدة باش يخلصوك الزبناء" },
-  delaiFourn: { fr: "Délai de paiement fournisseurs", ar: "أجل أداء الموردين", darija: "المدة باش تخلص الموردين" },
-  stockJours: { fr: "Stock moyen (jours)", ar: "متوسط المخزون (أيام)", darija: "المخزون المتوسط (أيام)" },
+  investissements: { fr: "Investissement total", en: "Total investment", darija: "مجموع الاستثمار" },
+  apport: { fr: "Apport personnel total", en: "Total personal contribution", darija: "مجموع المساهمة الشخصية" },
+  credit: { fr: "Crédit bancaire souhaité", en: "Requested bank loan", darija: "القرض البنكي اللي بغيتي" },
+  autresFinancements: { fr: "Autres financements", en: "Other financing", darija: "تمويلات خرى" },
+  subventions: { fr: "Subventions envisagées", en: "Planned grants", darija: "الإعانات المتوقعة" },
+  ca1: { fr: "Chiffre d'affaires Année 1", en: "Year 1 revenue", darija: "رقم المعاملات — السنة 1" },
+  croissance: { fr: "Croissance annuelle du CA", en: "Annual revenue growth", darija: "معدل الزيادة السنوية ديال رقم المعاملات" },
+  chargesExtPct: { fr: "Charges externes (% du CA)", en: "External expenses (% of revenue)", darija: "المصاريف الخارجية (% من رقم المعاملات)" },
+  masseSalariale: { fr: "Masse salariale annuelle", en: "Annual payroll", darija: "الأجور السنوية ديال الخدامة" },
+  nbEmployes: { fr: "Nombre d'employés", en: "Number of employees", darija: "عدد الخدامة" },
+  dureeCredit: { fr: "Durée du crédit", en: "Loan term", darija: "مدة القرض" },
+  tauxInteret: { fr: "Taux d'intérêt annuel", en: "Annual interest rate", darija: "نسبة الفائدة ديال العام" },
+  delaiClients: { fr: "Délai de paiement clients", en: "Customer payment terms", darija: "المدة باش يخلصوك الزبناء" },
+  delaiFourn: { fr: "Délai de paiement fournisseurs", en: "Supplier payment terms", darija: "المدة باش تخلص الموردين" },
+  stockJours: { fr: "Stock moyen (jours)", en: "Average stock (days)", darija: "المخزون المتوسط (أيام)" },
 };
 
 /**
@@ -73,7 +73,7 @@ const LABELS = {
  * l'utilisateur ne doit jamais voir une estimation présentée comme une
  * donnée officielle (règle du cahier des charges, section 15).
  *
- * `lang` (fr | ar | darija) localise le libellé ET l'explication de chaque
+ * `lang` (fr | en | darija) localise le libellé ET l'explication de chaque
  * hypothèse : ce sont les seules données de `bp` consommées par l'onglet
  * "Hypothèses" du classeur Entrepreneur (server/services/excelBuilder/entrepreneurWorkbook.js),
  * qui doit être intégralement dans la langue choisie par l'entrepreneur.
@@ -93,7 +93,7 @@ export function construireHypotheses(formData, lang = "fr") {
   const investTotal = sumInvestissement(investissement);
   add("investissements", investTotal, SOURCE.CALCULEE, tr(lang, {
     fr: "Somme des postes d'investissement saisis (local, travaux, équipement, machines, informatique, mobilier, véhicule, logiciels, licences, stock initial, communication, frais de création, autres).",
-    ar: "مجموع بنود الاستثمار المدخلة (المحل، الأشغال، التجهيزات، الآلات، المعدات المعلوماتية، الأثاث، السيارة، البرامج المعلوماتية، الرخص، المخزون الأولي، التواصل، مصاريف التأسيس، أخرى).",
+    en: "Sum of the investment items entered (premises, works, equipment, machines, IT equipment, furniture, vehicle, software, licenses, initial stock, communication, incorporation costs, other).",
     darija: "مجموع كل بنود الاستثمار اللي دخلتي (المحل، الأشغال، التجهيزات، الماكينات، المعلوماتية، الموبيليا، السيارة، البرامج، الرخص، المخزون الأولي، التواصل، مصاريف التأسيس، وأشياء أخرى).",
   }));
 
@@ -101,22 +101,22 @@ export function construireHypotheses(formData, lang = "fr") {
   const apport = num(financement.apportPersonnel) + num(financement.apportAssocies);
   add("apport", apport, SOURCE.SAISIE, tr(lang, {
     fr: "Apport personnel + apports des associés saisis à l'étape Financement.",
-    ar: "المساهمة الشخصية + مساهمات الشركاء المدخلة في مرحلة التمويل.",
+    en: "Personal contribution + partners' contributions entered in the Financing step.",
     darija: "المساهمة الشخصية زائد مساهمات الشركاء اللي دخلتيهم فمرحلة التمويل.",
   }));
   const credit = add("credit", num(financement.creditBancaireSouhaite), SOURCE.SAISIE, tr(lang, {
     fr: "Montant saisi à l'étape Financement.",
-    ar: "المبلغ المدخل في مرحلة التمويل.",
+    en: "Amount entered in the Financing step.",
     darija: "المبلغ اللي دخلتي فمرحلة التمويل.",
   }));
   const autresFinancements = add("autresFinancements", num(financement.autresFinancements), SOURCE.SAISIE, tr(lang, {
     fr: "Autres financements saisis (hors subvention).",
-    ar: "تمويلات أخرى مدخلة (بدون احتساب الإعانات).",
+    en: "Other financing entered (excluding grants).",
     darija: "تمويلات خرى دخلتيهم (ماعدا الإعانات).",
   }));
   const subventions = add("subventions", num(financement.subventionsEnvisagees), SOURCE.SAISIE, tr(lang, {
     fr: "Subventions envisagées, non garanties tant que l'éligibilité n'est pas confirmée.",
-    ar: "إعانات متوخاة، غير مضمونة إلى حين تأكيد الأهلية.",
+    en: "Planned grants, not guaranteed until eligibility is confirmed.",
     darija: "إعانات متوقعة، ماشي مضمونة حتى تتأكد الأهلية.",
   }));
 
@@ -126,14 +126,14 @@ export function construireHypotheses(formData, lang = "fr") {
   if (previ.caAnnee1Estime !== undefined && previ.caAnnee1Estime !== null && previ.caAnnee1Estime !== "") {
     ca1 = add("ca1", num(previ.caAnnee1Estime), SOURCE.SAISIE, tr(lang, {
       fr: "Chiffre d'affaires Année 1 estimé directement par le porteur de projet.",
-      ar: "رقم الأعمال للسنة الأولى، مقدَّر مباشرة من طرف حامل المشروع.",
+      en: "Year 1 revenue estimated directly by the project owner.",
       darija: "رقم المعاملات ديال السنة الأولى، قدرو صاحب المشروع بنفسه.",
     }));
   } else {
     const caCalcule = caDepuisProduits(produits);
     ca1 = add("ca1", caCalcule, SOURCE.CALCULEE, tr(lang, {
       fr: "Calculé à partir des produits/services saisis : Σ (prix de vente × quantité mensuelle estimée × fréquence de vente annuelle).",
-      ar: "محسوب انطلاقاً من المنتجات/الخدمات المدخلة: مجموع (سعر البيع × الكمية الشهرية المقدَّرة × عدد أشهر البيع في السنة).",
+      en: "Calculated from the products/services entered: Σ (selling price × estimated monthly quantity × annual selling frequency).",
       darija: "محسوب من المنتوجات/الخدمات اللي دخلتي: مجموع (ثمن البيع × الكمية ديال الشهر × عدد الشهور اللي كتبيع فيهم فالعام).",
     }));
   }
@@ -142,12 +142,12 @@ export function construireHypotheses(formData, lang = "fr") {
     previ.croissanceAnnuellePct !== undefined && previ.croissanceAnnuellePct !== null && previ.croissanceAnnuellePct !== ""
       ? add("croissance", num(previ.croissanceAnnuellePct), SOURCE.SAISIE, tr(lang, {
           fr: "Taux de croissance annuel saisi par l'utilisateur.",
-          ar: "معدل النمو السنوي الذي أدخله المستخدم.",
+          en: "Annual growth rate entered by the user.",
           darija: "معدل الزيادة السنوية اللي حطيتي نتا.",
         }))
       : add("croissance", CROISSANCE_DEFAUT_PCT, SOURCE.REFERENCE, tr(lang, {
           fr: `Aucune hypothèse de croissance saisie : valeur de référence usuelle retenue (${CROISSANCE_DEFAUT_PCT}%/an), à ajuster si besoin.`,
-          ar: `لم يتم إدخال أي فرضية للنمو: تم اعتماد قيمة مرجعية معتادة (${CROISSANCE_DEFAUT_PCT}% سنوياً)، قابلة للتعديل عند الحاجة.`,
+          en: `No growth assumption entered: a standard reference value was used (${CROISSANCE_DEFAUT_PCT}%/year), adjustable if needed.`,
           darija: `ما دخلتيش شي فرضية ديال النمو: تخدمنا بقيمة مرجعية عادية (${CROISSANCE_DEFAUT_PCT}% فالعام)، يمكن تبدلها إلا احتجتي.`,
         }));
 
@@ -157,14 +157,14 @@ export function construireHypotheses(formData, lang = "fr") {
   if (chargesAnnuelles > 0 && ca1 > 0) {
     chargesExtPct = add("chargesExtPct", (chargesAnnuelles / ca1) * 100, SOURCE.CALCULEE, tr(lang, {
       fr: "Calculé à partir des charges détaillées saisies (loyer, électricité, eau, internet, télécoms, marketing, transport, assurance, comptabilité, logiciels, maintenance, matières premières, frais bancaires, taxes, autres) rapportées au CA Année 1.",
-      ar: "محسوب انطلاقاً من التكاليف المفصلة المدخلة (الكراء، الكهرباء، الماء، الأنترنت، الاتصالات، التسويق، النقل، التأمين، المحاسبة، البرامج، الصيانة، المواد الأولية، المصاريف البنكية، الضرائب، أخرى) مقارنة برقم الأعمال للسنة الأولى.",
+      en: "Calculated from the detailed expenses entered (rent, electricity, water, internet, telecoms, marketing, transport, insurance, accounting, software, maintenance, raw materials, bank fees, taxes, other) relative to Year 1 revenue.",
       darija: "محسوب من المصاريف المفصلة اللي دخلتي (الكراء، الضو، الما، الأنترنيت، الاتصالات، التسويق، النقل، التأمين، المحاسبة، البرامج، الصيانة، المواد الأولية، مصاريف البنك، الضرائب، خرى) مقسومة على رقم المعاملات ديال السنة الأولى.",
     }));
   } else {
     const defaut = CHARGES_EXT_PCT_DEFAUT[secteur] ?? 40;
     chargesExtPct = add("chargesExtPct", defaut, SOURCE.REFERENCE, tr(lang, {
       fr: `Charges détaillées insuffisantes pour un calcul direct : valeur de référence usuelle pour le secteur ${secteur} (${defaut}% du CA).`,
-      ar: `المعطيات التفصيلية للتكاليف غير كافية لحساب مباشر: تم اعتماد قيمة مرجعية معتادة لقطاع ${secteur} (${defaut}% من رقم الأعمال).`,
+      en: `Detailed expenses insufficient for a direct calculation: a standard reference value for the ${secteur} sector was used (${defaut}% of revenue).`,
       darija: `المصاريف المفصلة ما كافيينش باش نحسبو بشكل مباشر: تخدمنا بقيمة مرجعية ديال قطاع ${secteur} (${defaut}% من رقم المعاملات).`,
     }));
   }
@@ -174,23 +174,23 @@ export function construireHypotheses(formData, lang = "fr") {
   if (rh.length > 0) {
     masseSal = add("masseSalariale", massSalarialeDepuisRH(rh), SOURCE.CALCULEE, tr(lang, {
       fr: "Somme des salaires bruts mensuels × nombre de postes × 12, à partir de la liste des recrutements prévus.",
-      ar: "مجموع الأجور الشهرية الخام × عدد المناصب × 12، انطلاقاً من لائحة التوظيفات المتوقعة.",
+      en: "Sum of monthly gross salaries × number of positions × 12, based on the planned hiring list.",
       darija: "مجموع الأجور الشهرية الخام × عدد المناصب × 12، بناءً على لائحة التوظيفات المتوقعة.",
     }));
     nbEmployes = add("nbEmployes", nbEmployesDepuisRH(rh), SOURCE.SAISIE, tr(lang, {
       fr: "Somme des effectifs saisis dans la liste Ressources Humaines.",
-      ar: "مجموع الأعداد المدخلة في لائحة الموارد البشرية.",
+      en: "Sum of the headcounts entered in the Human Resources list.",
       darija: "مجموع العدد اللي دخلتي فلائحة الموارد البشرية.",
     }));
   } else {
     masseSal = add("masseSalariale", num(chargesRaw.salaires), SOURCE.SAISIE, tr(lang, {
       fr: "Montant de salaires saisi directement (aucun poste détaillé renseigné).",
-      ar: "مبلغ الأجور مدخل مباشرة (لم يتم تحديد أي منصب بالتفصيل).",
+      en: "Salary amount entered directly (no detailed position provided).",
       darija: "مبلغ الأجور دخلتيه مباشرة (ما حطيتيش شي منصب بالتفصيل).",
     }));
     nbEmployes = add("nbEmployes", 0, SOURCE.SAISIE, tr(lang, {
       fr: "Aucun poste renseigné dans Ressources Humaines.",
-      ar: "لم يتم تحديد أي منصب في الموارد البشرية.",
+      en: "No position provided in Human Resources.",
       darija: "ما دخلتيش حتى منصب فالموارد البشرية.",
     }));
   }
@@ -199,12 +199,12 @@ export function construireHypotheses(formData, lang = "fr") {
     financement.dureeCredit !== undefined && financement.dureeCredit !== null && financement.dureeCredit !== ""
       ? add("dureeCredit", num(financement.dureeCredit, 5), SOURCE.SAISIE, tr(lang, {
           fr: "Durée saisie par l'utilisateur.",
-          ar: "المدة التي أدخلها المستخدم.",
+          en: "Term entered by the user.",
           darija: "المدة اللي حطيتي نتا.",
         }))
       : add("dureeCredit", 5, SOURCE.REFERENCE, tr(lang, {
           fr: "Aucune durée saisie : durée usuelle de 5 ans retenue par défaut.",
-          ar: "لم يتم إدخال أي مدة: تم اعتماد مدة معتادة من 5 سنوات كقيمة افتراضية.",
+          en: "No term entered: a standard 5-year term was used by default.",
           darija: "ما دخلتيش شي مدة: تخدمنا بمدة عادية ديال 5 سنين.",
         }));
 
@@ -213,18 +213,18 @@ export function construireHypotheses(formData, lang = "fr") {
     financement.tauxInteret !== undefined && financement.tauxInteret !== null && financement.tauxInteret !== ""
       ? add("tauxInteret", num(financement.tauxInteret, 5.5), SOURCE.SAISIE, tr(lang, {
           fr: "Taux saisi par l'utilisateur.",
-          ar: "النسبة التي أدخلها المستخدم.",
+          en: "Rate entered by the user.",
           darija: "النسبة اللي حطيتي نتا.",
         }))
       : add("tauxInteret", tauxInteretDefaut, SOURCE.REFERENCE, tauxInteretDefaut === 2
           ? tr(lang, {
               fr: "Taux préférentiel usuel du programme INTELAKA (2%) retenu par défaut car le crédit demandé entre dans son plafond — à confirmer avec la banque.",
-              ar: "تم اعتماد النسبة التفضيلية المعتادة لبرنامج إنطلاقة (2%) بشكل افتراضي لأن القرض المطلوب يدخل ضمن سقفه — يجب التأكد منها مع البنك.",
+              en: "Standard preferential rate of the INTELAKA program (2%) used by default because the requested loan falls within its cap — to be confirmed with the bank.",
               darija: "تخدمنا بالنسبة التفضيلية ديال برنامج إنطلاقة (2%) حيت القرض اللي طلبتي داخل فالسقف ديالو — خاصك تتأكد منها مع البنك.",
             })
           : tr(lang, {
               fr: "Taux bancaire classique usuel au Maroc (5,5%) retenu par défaut — à confirmer avec la banque.",
-              ar: "تم اعتماد النسبة البنكية العادية المعتمدة بالمغرب (5.5%) بشكل افتراضي — يجب التأكد منها مع البنك.",
+              en: "Standard bank rate usually applied in Morocco (5.5%) used by default — to be confirmed with the bank.",
               darija: "تخدمنا بالنسبة البنكية العادية فالمغرب (5.5%) — خاصك تتأكد منها مع البنك.",
             }));
 
@@ -232,12 +232,12 @@ export function construireHypotheses(formData, lang = "fr") {
     previ.delaiPaiementClients !== undefined && previ.delaiPaiementClients !== null && previ.delaiPaiementClients !== ""
       ? add("delaiClients", num(previ.delaiPaiementClients), SOURCE.SAISIE, tr(lang, {
           fr: "Délai saisi par l'utilisateur.",
-          ar: "الأجل الذي أدخله المستخدم.",
+          en: "Term entered by the user.",
           darija: "المدة اللي حطيتي نتا.",
         }))
       : add("delaiClients", DELAI_CLIENTS_DEFAUT[secteur] ?? 45, SOURCE.REFERENCE, tr(lang, {
           fr: `Valeur usuelle pour le secteur ${secteur}.`,
-          ar: `قيمة معتادة بالنسبة لقطاع ${secteur}.`,
+          en: `Standard value for the ${secteur} sector.`,
           darija: `قيمة عادية بالنسبة لقطاع ${secteur}.`,
         }));
 
@@ -245,12 +245,12 @@ export function construireHypotheses(formData, lang = "fr") {
     previ.delaiPaiementFournisseurs !== undefined && previ.delaiPaiementFournisseurs !== null && previ.delaiPaiementFournisseurs !== ""
       ? add("delaiFourn", num(previ.delaiPaiementFournisseurs), SOURCE.SAISIE, tr(lang, {
           fr: "Délai saisi par l'utilisateur.",
-          ar: "الأجل الذي أدخله المستخدم.",
+          en: "Term entered by the user.",
           darija: "المدة اللي حطيتي نتا.",
         }))
       : add("delaiFourn", DELAI_FOURNISSEURS_DEFAUT[secteur] ?? 45, SOURCE.REFERENCE, tr(lang, {
           fr: `Valeur usuelle pour le secteur ${secteur}.`,
-          ar: `قيمة معتادة بالنسبة لقطاع ${secteur}.`,
+          en: `Standard value for the ${secteur} sector.`,
           darija: `قيمة عادية بالنسبة لقطاع ${secteur}.`,
         }));
 
@@ -258,12 +258,12 @@ export function construireHypotheses(formData, lang = "fr") {
     previ.stockMoyenJours !== undefined && previ.stockMoyenJours !== null && previ.stockMoyenJours !== ""
       ? add("stockJours", num(previ.stockMoyenJours), SOURCE.SAISIE, tr(lang, {
           fr: "Valeur saisie par l'utilisateur.",
-          ar: "القيمة التي أدخلها المستخدم.",
+          en: "Value entered by the user.",
           darija: "القيمة اللي حطيتي نتا.",
         }))
       : add("stockJours", STOCK_JOURS_DEFAUT[secteur] ?? 30, SOURCE.REFERENCE, tr(lang, {
           fr: `Valeur usuelle pour le secteur ${secteur}.`,
-          ar: `قيمة معتادة بالنسبة لقطاع ${secteur}.`,
+          en: `Standard value for the ${secteur} sector.`,
           darija: `قيمة عادية بالنسبة لقطاع ${secteur}.`,
         }));
 

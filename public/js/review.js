@@ -17,7 +17,7 @@ function showApp() {
   reviewApp.classList.remove('hidden');
 }
 
-const LANGUE_LABELS = { fr: 'Français', ar: 'العربية', darija: 'Darija' };
+const LANGUE_LABELS = { fr: 'Français', en: 'Anglais', darija: 'الدارجة' };
 
 function renderKpis(bp) {
   const grid = document.getElementById('kpiGrid');
