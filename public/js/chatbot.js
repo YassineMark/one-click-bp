@@ -88,7 +88,7 @@ function mount() {
       <button type="button" id="cb-close" aria-label="Fermer">✕</button>
     </div>
     <div id="cb-messages">
-      <div id="cb-intro">Posez vos questions en français ou en arabe/darija — sur le business plan, INTELAKA ou FORSA.</div>
+      <div id="cb-intro">Posez vos questions en français, en anglais ou en arabe/darija — sur le business plan, INTELAKA ou FORSA.</div>
     </div>
     <form id="cb-form">
       <textarea id="cb-input" rows="1" placeholder="Écrivez votre question…"></textarea>
