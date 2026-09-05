@@ -6,6 +6,7 @@ import "./db/db.js"; // initialise la base au démarrage
 import { authRouter } from "./routes/auth.routes.js";
 import { wizardRouter } from "./routes/wizard.routes.js";
 import { projectsRouter } from "./routes/projects.routes.js";
+import { chatbotRouter } from "./routes/chatbot.routes.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -24,6 +25,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/wizard", wizardRouter);
 app.use("/api/projects", projectsRouter);
+app.use("/api/chatbot", chatbotRouter);
 
 app.get("/api/health", (req, res) => res.json({ ok: true }));
 
