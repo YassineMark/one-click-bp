@@ -19,12 +19,27 @@ function showApp() {
 
 const LANGUE_LABELS = { fr: 'Français', en: 'Anglais', darija: 'الدارجة' };
 
-function renderKpis(bp) {
+function fmtPct(v) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return '—';
+  return n.toFixed(1) + '%';
+}
+
+function renderDashboardKpis(bp) {
   const grid = document.getElementById('kpiGrid');
+  const tresorerieAn1 = bp.bilan.actif.rows[2][1][0];
+  const margeNetteAn1 = bp.ratios[0].vals[0];
+  const autonomieFinAn1 = bp.ratios[4].vals[0];
   const kpis = [
     { label: 'Investissement total', value: fmtDH(bp.inputs.investissements) },
-    { label: "CA Année 1 (HT)", value: fmtDH(bp.cpc.ca[0]) },
+    { label: 'CA Année 1 (HT)', value: fmtDH(bp.cpc.ca[0]) },
+    { label: 'CA Année 3 (HT)', value: fmtDH(bp.cpc.ca[2]) },
     { label: 'Résultat net Année 1', value: fmtDH(bp.cpc.resultatNet[0]), neg: bp.cpc.resultatNet[0] < 0 },
+    { label: 'Résultat net Année 3', value: fmtDH(bp.cpc.resultatNet[2]), neg: bp.cpc.resultatNet[2] < 0 },
+    { label: 'Seuil de rentabilité (CA)', value: bp.seuilRentabilite ? fmtDH(bp.seuilRentabilite.seuilCA) : 'Non atteignable' },
+    { label: 'Marge nette Année 1', value: fmtPct(margeNetteAn1), neg: margeNetteAn1 < 0 },
+    { label: 'Autonomie financière Année 1', value: fmtPct(autonomieFinAn1) },
+    { label: 'Trésorerie estimée Année 1', value: fmtDH(tresorerieAn1), neg: tresorerieAn1 < 0 },
     { label: "Nombre d'employés", value: fmtNum(bp.inputs.nbEmployes) },
   ];
   grid.innerHTML = kpis.map((k) => `
@@ -33,6 +48,74 @@ function renderKpis(bp) {
       <div class="kpi-value">${k.value}</div>
     </div>
   `).join('');
+}
+
+let chartCaResultat = null;
+let chartFinancement = null;
+
+function renderDashboardCharts(bp) {
+  const annees = bp.cpc.annees;
+
+  const ctx1 = document.getElementById('chartCaResultat').getContext('2d');
+  if (chartCaResultat) chartCaResultat.destroy();
+  chartCaResultat = new Chart(ctx1, {
+    data: {
+      labels: annees,
+      datasets: [
+        { type: 'bar', label: "Chiffre d'affaires", data: bp.cpc.ca, backgroundColor: '#0F9D58' },
+        { type: 'line', label: 'Résultat net', data: bp.cpc.resultatNet, borderColor: '#0B2545', backgroundColor: '#0B2545', tension: 0.3 },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } },
+      scales: { y: { ticks: { callback: (v) => fmtDH(v) } } },
+    },
+  });
+
+  const ressources = bp.pf.ressources.slice(0, 3).filter(([, montant]) => montant > 0);
+  const ctx2 = document.getElementById('chartFinancement').getContext('2d');
+  if (chartFinancement) chartFinancement.destroy();
+  chartFinancement = new Chart(ctx2, {
+    type: 'doughnut',
+    data: {
+      labels: ressources.map(([label]) => label),
+      datasets: [{ data: ressources.map(([, montant]) => montant), backgroundColor: ['#0F9D58', '#0B2545', '#B7791F'] }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 10.5 } } } },
+    },
+  });
+}
+
+function renderDashboard(bp) {
+  renderDashboardKpis(bp);
+  renderDashboardCharts(bp);
+}
+
+function setupDashboardDownload() {
+  const btn = document.getElementById('downloadDashboardBtn');
+  btn.addEventListener('click', async () => {
+    const original = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '⏳ Génération…';
+    try {
+      const target = document.getElementById('dashboardSection');
+      const canvas = await html2canvas(target, { backgroundColor: '#F4F7FB', scale: 2 });
+      const link = document.createElement('a');
+      link.download = 'tableau-de-bord-one-click-bp.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      alert("Impossible de générer l'image du tableau de bord.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = original;
+    }
+  });
 }
 
 function stepLinks(item) {
@@ -148,9 +231,10 @@ async function init() {
       apiGet(`/api/projects/${projectId}`),
     ]);
 
-    renderKpis(bp);
+    renderDashboard(bp);
     renderValidation(bp);
     renderLeftColumn(bp, project.form_data);
+    setupDashboardDownload();
 
     document.getElementById('editBtn').addEventListener('click', () => {
       const premiereEtape = bp.validation.erreurs.find((e) => e.etapes?.length)?.etapes[0];
