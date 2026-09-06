@@ -9,21 +9,98 @@
 <link rel="stylesheet" href="css/styles.css">
 <style>
   .hidden{ display:none !important; }
-  .products-list{ display:flex; flex-direction:column; gap:10px; }
-  .product-row{ display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px dashed var(--line); font-size:14px; }
-  .product-row:last-child{ border-bottom:none; }
-  .product-row .p-name{ font-weight:600; color:var(--navy); }
-  .product-row .p-meta{ font-size:12px; color:var(--muted); }
   .blocking-note{ font-size:12.5px; color:var(--warn); margin-top:10px; line-height:1.5; }
-  .dashboard-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
-  .dashboard-head h2{ font-size:18px; color:var(--navy); }
-  .dashboard-head p{ font-size:13px; color:var(--muted); margin-top:2px; }
-  .dashboard-charts{ display:grid; grid-template-columns:1.4fr 1fr; gap:16px; margin-bottom:22px; }
+
+  /* ---------- Dashboard header ---------- */
+  .dashboard-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:14px; }
+  .dashboard-head .dh-title{ display:flex; align-items:center; gap:14px; }
+  .dashboard-head .dh-icon{
+    width:42px; height:42px; border-radius:12px; flex-shrink:0; font-size:19px;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--emerald) 160%);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .dashboard-head h2{ font-size:18.5px; color:var(--navy); }
+  .dashboard-head p{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+  #downloadDashboardBtn .dl-spinner{ display:inline-block; width:13px; height:13px; border-radius:50%; border:2px solid rgba(255,255,255,.4); border-top-color:#fff; animation:spin .7s linear infinite; }
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(178px, 1fr)); gap:14px; margin-bottom:26px; }
+  .kpi{
+    background:var(--card); border-radius:14px; padding:17px 19px; border:1px solid var(--line);
+    box-shadow:0 2px 10px rgba(11,37,69,.05); transition:transform .18s, box-shadow .18s, border-color .18s;
+  }
+  .kpi:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(11,37,69,.1); border-color:var(--emerald2); }
+  .kpi .kpi-icon{
+    width:30px; height:30px; border-radius:9px; background:#EAF6EF; color:var(--emerald);
+    display:flex; align-items:center; justify-content:center; font-size:14px; margin-bottom:13px;
+  }
+  .kpi.neg .kpi-icon{ background:#FDECEC; color:var(--warn); }
+  .kpi .kpi-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px; font-weight:700; }
+  .kpi .kpi-value{ font-size:20px; font-weight:700; color:var(--navy); margin-top:6px; font-family:'IBM Plex Mono',monospace; letter-spacing:-.3px; }
+  .kpi.neg .kpi-value{ color:var(--warn); }
+
+  /* ---------- Chart cards ---------- */
+  .dashboard-charts{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:28px; align-items:stretch; }
   @media (max-width: 900px){ .dashboard-charts{ grid-template-columns:1fr; } }
-  .chart-card{ background:var(--card); border-radius:14px; padding:16px 18px; box-shadow:0 2px 10px rgba(11,37,69,.06); }
-  .chart-card h4{ font-size:13.5px; color:var(--navy); margin-bottom:10px; }
-  .chart-card .chart-wrap{ position:relative; height:220px; }
-  #dashboardSection{ background:transparent; }
+  .chart-card{
+    background:var(--card); border-radius:16px; padding:22px 24px 18px; border:1px solid var(--line);
+    box-shadow:0 2px 12px rgba(11,37,69,.06); display:flex; flex-direction:column;
+  }
+  .chart-card .cc-head{ display:flex; align-items:center; gap:9px; }
+  .chart-card .cc-icon{ font-size:15px; }
+  .chart-card h4{ font-size:14px; color:var(--navy); font-family:'Space Grotesk',sans-serif; font-weight:700; }
+  .chart-card .cc-sub{ font-size:12px; color:var(--muted); margin:2px 0 14px; }
+  .chart-card .chart-wrap{ position:relative; flex:1; min-height:240px; }
+
+  /* ---------- Section cards (Le projet, Produits, Financement, Exploitation, Langue) ---------- */
+  .section-card{ background:var(--card); border-radius:16px; border:1px solid var(--line); box-shadow:0 2px 12px rgba(11,37,69,.06); overflow:hidden; }
+  .section-card + .section-card{ margin-top:18px; }
+  .section-card .sc-head{ display:flex; align-items:center; gap:12px; padding:20px 24px 4px; }
+  .section-card .sc-icon{
+    width:34px; height:34px; border-radius:10px; background:var(--paper); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:15px;
+  }
+  .section-card h3{ font-size:15.5px; }
+  .section-card .sc-body{ padding:16px 24px 22px; }
+
+  /* Info grid ("Le projet") */
+  .info-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px 22px; }
+  @media (max-width: 560px){ .info-grid{ grid-template-columns:1fr; } }
+  .info-tile .it-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-weight:700; margin-bottom:5px; }
+  .info-tile .it-value{ font-size:14.5px; font-weight:600; color:var(--navy); }
+
+  /* Product table */
+  .table-scroll{ overflow-x:auto; }
+  .data-table{ width:100%; border-collapse:collapse; font-size:13.5px; min-width:420px; }
+  .data-table thead th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); font-weight:700; padding:0 10px 10px 0; border-bottom:1.5px solid var(--line); white-space:nowrap; }
+  .data-table thead th.num{ text-align:right; }
+  .data-table tbody td{ padding:13px 10px 13px 0; border-bottom:1px dashed var(--line); color:var(--navy); }
+  .data-table tbody tr:last-child td{ border-bottom:none; }
+  .data-table td.num{ text-align:right; font-family:'IBM Plex Mono',monospace; white-space:nowrap; }
+  .data-table td.p-name{ font-weight:600; }
+
+  /* Finance stats */
+  .finance-stats{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
+  @media (max-width: 560px){ .finance-stats{ grid-template-columns:1fr; } }
+  .finance-stat{ display:flex; align-items:center; gap:12px; padding:14px 16px; border-radius:12px; background:var(--paper); }
+  .finance-stat .fs-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+  .finance-stat .fs-label{ font-size:11.5px; color:var(--muted); font-weight:600; }
+  .finance-stat .fs-value{ font-size:16px; font-weight:700; color:var(--navy); font-family:'IBM Plex Mono',monospace; margin-top:2px; }
+  .finance-footer{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 16px; border-radius:12px; background:#F1FBF6; border:1px solid #BFE8D2; }
+  .finance-footer + .finance-footer{ margin-top:10px; }
+  .finance-footer.neutral{ background:var(--paper); border-color:var(--line); }
+  .finance-footer.neg{ background:var(--amber-bg); border-color:var(--amber-line); }
+  .finance-footer .ff-label{ font-size:12.5px; font-weight:700; color:var(--navy); }
+  .finance-footer .ff-value{ font-size:16px; font-weight:700; font-family:'IBM Plex Mono',monospace; color:var(--good); }
+  .finance-footer.neutral .ff-value{ color:var(--navy); }
+  .finance-footer.neg .ff-value{ color:var(--amber); }
+
+  /* Exploitation tiles */
+  .stat-tiles{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width: 560px){ .stat-tiles{ grid-template-columns:1fr; } }
+  .stat-tile{ padding:14px 16px; border-radius:12px; border:1px solid var(--line); background:#FBFCFE; }
+  .stat-tile .st-label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; font-weight:700; }
+  .stat-tile .st-value{ font-size:16.5px; font-weight:700; color:var(--navy); font-family:'IBM Plex Mono',monospace; margin-top:6px; }
 </style>
 </head>
 <body>
@@ -54,22 +131,27 @@
 
     <div id="dashboardSection">
       <div class="dashboard-head">
-        <div>
-          <h2>📊 Tableau de bord — Résumé exécutif</h2>
-          <p>Vue d'ensemble des indicateurs clés de votre projet.</p>
+        <div class="dh-title">
+          <div class="dh-icon">📊</div>
+          <div>
+            <h2>Tableau de bord — Résumé exécutif</h2>
+            <p>Vue d'ensemble des indicateurs clés de votre projet.</p>
+          </div>
         </div>
-        <button type="button" id="downloadDashboardBtn" class="btn btn-secondary btn-sm">📥 Télécharger le tableau de bord</button>
+        <button type="button" id="downloadDashboardBtn" class="btn btn-primary btn-sm">📄 Télécharger en PDF</button>
       </div>
 
       <div class="kpi-grid" id="kpiGrid"></div>
 
       <div class="dashboard-charts">
         <div class="chart-card">
-          <h4>Chiffre d'affaires &amp; Résultat net (3 ans)</h4>
+          <div class="cc-head"><span class="cc-icon">📈</span><h4>Chiffre d'affaires &amp; résultat net</h4></div>
+          <div class="cc-sub">Projection sur 3 ans</div>
           <div class="chart-wrap"><canvas id="chartCaResultat"></canvas></div>
         </div>
         <div class="chart-card">
-          <h4>Plan de financement</h4>
+          <div class="cc-head"><span class="cc-icon">💰</span><h4>Plan de financement</h4></div>
+          <div class="cc-sub">Répartition des ressources</div>
           <div class="chart-wrap"><canvas id="chartFinancement"></canvas></div>
         </div>
       </div>
@@ -92,6 +174,7 @@
 
 <script src="vendor/chart.umd.min.js"></script>
 <script src="vendor/html2canvas.min.js"></script>
+<script src="vendor/jspdf.umd.min.js"></script>
 <script type="module" src="js/review.js"></script>
 <script type="module" src="js/chatbot.js"></script>
 </body>
