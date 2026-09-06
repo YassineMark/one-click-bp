@@ -10,6 +10,7 @@ import { run, get, all } from "../db/db.js";
 import { parseBalanceFile, analyserBalance } from "../services/balanceParser.js";
 import { analyserProjet } from "../services/analysisService.js";
 import { runGeneration, listDocuments, getDocumentPath, GENERATED_DIR, GENERATION_STEPS } from "../services/documentService.js";
+import { construireDashboardWorkbook } from "../services/excelBuilder/dashboardWorkbook.js";
 
 export const projectsRouter = Router();
 projectsRouter.use(requireAuth);
@@ -102,6 +103,24 @@ projectsRouter.get("/:id/review", (req, res) => {
   const balanceAnalysis = balanceRow ? JSON.parse(balanceRow.analysis_json) : null;
   const bp = analyserProjet(project.form_data, project.project_type, balanceAnalysis);
   res.json({ bp });
+});
+
+// ---------- Export Excel du tableau de bord (graphiques capturés côté client) ----------
+projectsRouter.post("/:id/dashboard-export", async (req, res) => {
+  const project = getProject(req.user.id, req.params.id);
+  if (!project) return res.status(404).json({ error: "Projet introuvable." });
+  const balanceRow = get("SELECT analysis_json FROM balance_uploads WHERE project_id = ? AND parse_status = 'ok' ORDER BY created_at DESC LIMIT 1", [project.id]);
+  const balanceAnalysis = balanceRow ? JSON.parse(balanceRow.analysis_json) : null;
+  const bp = analyserProjet(project.form_data, project.project_type, balanceAnalysis);
+  try {
+    const buffer = await construireDashboardWorkbook(bp, (req.body && req.body.images) || {});
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", 'attachment; filename="tableau-de-bord-one-click-bp.xlsx"');
+    res.send(Buffer.from(buffer));
+  } catch (e) {
+    console.error("Erreur export dashboard Excel:", e);
+    res.status(500).json({ error: "Impossible de générer le fichier Excel." });
+  }
 });
 
 // ---------- Génération des documents (flux d'étapes réel via SSE) ----------

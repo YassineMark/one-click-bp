@@ -334,6 +334,10 @@ function renderSigChart(bp, yearIndex) {
       indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
+      // Pas d'animation : ce graphique est aussi recréé silencieusement pour
+      // chaque année lors de l'export Excel (voir captureSigImagesAllYears),
+      // qui a besoin d'un rendu final immédiat pour capturer une image nette.
+      animation: false,
       plugins: {
         legend: { display: false },
         tooltip: { ...TOOLTIP_BASE, callbacks: { label: (c) => fmtDH(c.parsed.x) } },
@@ -359,7 +363,28 @@ function renderDashboard(bp) {
   renderChartRatios(bp);
 }
 
-// ==================== Téléchargement PDF ====================
+// ==================== Téléchargement Excel ====================
+
+function captureChartImage(chart) {
+  if (!chart) return null;
+  return { data: chart.toBase64Image('image/png', 1), width: chart.canvas.width, height: chart.canvas.height };
+}
+
+// Le graphique SIG affiche une seule année à la fois à l'écran : pour
+// l'export, on le fait re-render brièvement pour chacune des 3 années afin
+// de capturer une image par onglet, puis on restaure l'année que
+// l'utilisateur était en train de consulter.
+async function captureSigImagesAllYears(bp) {
+  const originalYear = selectedYear;
+  const images = [];
+  for (let y = 0; y < bp.cpc.annees.length; y++) {
+    renderSigChart(bp, y);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    images.push(captureChartImage(chartSig));
+  }
+  renderSigChart(bp, originalYear);
+  return images;
+}
 
 function setupDashboardDownload() {
   const btn = document.getElementById('downloadDashboardBtn');
@@ -368,19 +393,31 @@ function setupDashboardDownload() {
     btn.disabled = true;
     btn.innerHTML = '<span class="dl-spinner"></span> Génération…';
     try {
-      const target = document.getElementById('dashboardSection');
-      const canvas = await html2canvas(target, { backgroundColor: '#F4F7FB', scale: 2 });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      const pdf = new jsPDF({
-        orientation: canvas.width >= canvas.height ? 'landscape' : 'portrait',
-        unit: 'px',
-        format: [canvas.width, canvas.height],
+      const images = {
+        financement: captureChartImage(chartFinancement),
+        caResultat: captureChartImage(chartCaResultat),
+        tresorerie: captureChartImage(chartTresorerie),
+        ratios: captureChartImage(chartRatios),
+        sig: await captureSigImagesAllYears(currentBp),
+      };
+      const res = await fetch(`/api/projects/${projectId}/dashboard-export`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ images }),
       });
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
-      pdf.save('tableau-de-bord-one-click-bp.pdf');
+      if (!res.ok) throw new Error('Échec de la génération du fichier Excel.');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'tableau-de-bord-one-click-bp.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
     } catch (e) {
-      alert('Impossible de générer le PDF du tableau de bord.');
+      alert('Impossible de générer le fichier Excel du tableau de bord.');
     } finally {
       btn.disabled = false;
       btn.innerHTML = original;

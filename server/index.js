@@ -19,7 +19,9 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(express.json({ limit: "1mb" }));
+// 20mb : l'export Excel du tableau de bord envoie plusieurs graphiques
+// capturés en PNG base64 (route protégée par requireAuth, usage manuel).
+app.use(express.json({ limit: "20mb" }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
