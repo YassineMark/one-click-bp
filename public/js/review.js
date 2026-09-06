@@ -19,6 +19,25 @@ function showApp() {
 
 const LANGUE_LABELS = { fr: 'Français', en: 'Anglais', darija: 'الدارجة' };
 const CHART_COLORS = ['#0F9D58', '#0B2545', '#B7791F'];
+const COLOR_EMERALD = '#0F9D58';
+const COLOR_EMERALD_FADED = 'rgba(15,157,88,.28)';
+const COLOR_NAVY = '#0B2545';
+const COLOR_AMBER = '#B7791F';
+const COLOR_WARN = '#C0392B';
+
+const TOOLTIP_BASE = {
+  backgroundColor: '#0B2545', titleColor: '#fff', bodyColor: '#EAF2FF', padding: 10, cornerRadius: 8,
+  titleFont: { family: 'Space Grotesk', size: 12, weight: '700' }, bodyFont: { family: 'Inter', size: 12 },
+};
+const AXIS_TICK_FONT = { family: 'Inter', size: 11 };
+const LEGEND_LABELS = { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16, font: { family: 'Inter', size: 11.5 }, color: '#33415C' };
+
+// Un seul sélecteur d'année pilote les KPI "par année", le graphique SIG, et
+// le point/barre mis en évidence sur les autres graphiques (façon "slicer"
+// façon BI) — tout reste calculé côté serveur, on ne fait ici qu'indexer les
+// tableaux déjà renvoyés par /review pour l'année choisie.
+let selectedYear = 0;
+let currentBp = null;
 
 function fmtPct(v) {
   const n = Number(v);
@@ -42,38 +61,134 @@ function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+// ==================== Sélecteur d'année (slicer) ====================
+
+function renderYearTabs(bp) {
+  const container = document.getElementById('yearTabs');
+  container.innerHTML = bp.cpc.annees.map((label, i) => `
+    <button type="button" class="year-tab ${i === selectedYear ? 'active' : ''}" data-year="${i}">${label}</button>
+  `).join('');
+  container.querySelectorAll('.year-tab').forEach((btn) => {
+    btn.addEventListener('click', () => setSelectedYear(Number(btn.dataset.year)));
+  });
+}
+
+function setSelectedYear(i) {
+  if (i === selectedYear || !currentBp) return;
+  selectedYear = i;
+  document.querySelectorAll('.year-tab').forEach((btn) => btn.classList.toggle('active', Number(btn.dataset.year) === i));
+  const label = currentBp.cpc.annees[i];
+  document.getElementById('kpiYearLabel').innerHTML = `<span>📅</span> Résultats — ${label}`;
+  document.getElementById('sigSub').textContent = `Résultats détaillés — ${label}`;
+
+  renderYearKpis(currentBp, i);
+  if (chartCaResultat) {
+    chartCaResultat.data.datasets[0].backgroundColor = barColorsForYear();
+    chartCaResultat.update();
+  }
+  if (chartTresorerie) chartTresorerie.update();
+  if (chartRatios) chartRatios.update();
+  renderSigChart(currentBp, i);
+}
+
+function barColorsForYear() {
+  return [0, 1, 2].map((i) => (i === selectedYear ? COLOR_EMERALD : COLOR_EMERALD_FADED));
+}
+
 // ==================== KPI dashboard ====================
 
-function renderDashboardKpis(bp) {
-  const grid = document.getElementById('kpiGrid');
-  const tresorerieAn1 = bp.bilan.actif.rows[2][1][0];
-  const margeNetteAn1 = bp.ratios[0].vals[0];
-  const autonomieFinAn1 = bp.ratios[4].vals[0];
-  const kpis = [
-    { icon: '🏢', label: 'Investissement total', value: fmtDH(bp.inputs.investissements) },
-    { icon: '📈', label: 'CA Année 1 (HT)', value: fmtDH(bp.cpc.ca[0]) },
-    { icon: '🚀', label: 'CA Année 3 (HT)', value: fmtDH(bp.cpc.ca[2]) },
-    { icon: '💵', label: 'Résultat net Année 1', value: fmtDH(bp.cpc.resultatNet[0]), neg: bp.cpc.resultatNet[0] < 0 },
-    { icon: '💹', label: 'Résultat net Année 3', value: fmtDH(bp.cpc.resultatNet[2]), neg: bp.cpc.resultatNet[2] < 0 },
-    { icon: '🎯', label: 'Seuil de rentabilité (CA)', value: bp.seuilRentabilite ? fmtDH(bp.seuilRentabilite.seuilCA) : 'Non atteignable' },
-    { icon: '📊', label: 'Marge nette Année 1', value: fmtPct(margeNetteAn1), neg: margeNetteAn1 < 0 },
-    { icon: '🛡️', label: 'Autonomie financière Année 1', value: fmtPct(autonomieFinAn1) },
-    { icon: '🏦', label: 'Trésorerie estimée Année 1', value: fmtDH(tresorerieAn1), neg: tresorerieAn1 < 0 },
-    { icon: '👥', label: "Nombre d'employés", value: fmtNum(bp.inputs.nbEmployes) },
-  ];
-  grid.innerHTML = kpis.map((k) => `
+function kpiCardHtml(k) {
+  return `
     <div class="kpi ${k.neg ? 'neg' : ''}">
       <div class="kpi-icon">${k.icon}</div>
       <div class="kpi-label">${k.label}</div>
       <div class="kpi-value">${k.value}</div>
     </div>
-  `).join('');
+  `;
+}
+
+function renderStaticKpis(bp) {
+  const grid = document.getElementById('kpiGridStatic');
+  const kpis = [
+    { icon: '🏢', label: 'Investissement total', value: fmtDH(bp.inputs.investissements) },
+    { icon: '🎯', label: 'Seuil de rentabilité (CA)', value: bp.seuilRentabilite ? fmtDH(bp.seuilRentabilite.seuilCA) : 'Non atteignable' },
+    { icon: '👥', label: "Nombre d'employés", value: fmtNum(bp.inputs.nbEmployes) },
+  ];
+  grid.innerHTML = kpis.map(kpiCardHtml).join('');
+}
+
+function renderYearKpis(bp, yearIndex) {
+  const grid = document.getElementById('kpiGridYear');
+  const tresorerie = bp.bilan.actif.rows[2][1][yearIndex];
+  const margeNette = bp.ratios[0].vals[yearIndex];
+  const autonomieFin = bp.ratios[4].vals[yearIndex];
+  const ca = bp.cpc.ca[yearIndex];
+  const rn = bp.cpc.resultatNet[yearIndex];
+  const kpis = [
+    { icon: '📈', label: "Chiffre d'affaires (HT)", value: fmtDH(ca) },
+    { icon: '💵', label: 'Résultat net', value: fmtDH(rn), neg: rn < 0 },
+    { icon: '📊', label: 'Marge nette', value: fmtPct(margeNette), neg: margeNette < 0 },
+    { icon: '🛡️', label: 'Autonomie financière', value: fmtPct(autonomieFin) },
+    { icon: '🏦', label: 'Trésorerie estimée', value: fmtDH(tresorerie), neg: tresorerie < 0 },
+  ];
+  grid.innerHTML = kpis.map(kpiCardHtml).join('');
+  grid.querySelectorAll('.kpi').forEach((el) => {
+    el.classList.add('updating');
+    setTimeout(() => el.classList.remove('updating'), 350);
+  });
 }
 
 // ==================== Charts ====================
 
 let chartCaResultat = null;
 let chartFinancement = null;
+let chartSig = null;
+let chartTresorerie = null;
+let chartRatios = null;
+
+function yearClickHandler(chart) {
+  return (evt) => {
+    const points = chart.getElementsAtEventForMode(evt, 'x', { intersect: false }, true);
+    if (points.length) setSelectedYear(points[0].index);
+  };
+}
+
+function renderChartCaResultat(bp) {
+  const ctx = document.getElementById('chartCaResultat').getContext('2d');
+  if (chartCaResultat) chartCaResultat.destroy();
+  chartCaResultat = new Chart(ctx, {
+    data: {
+      labels: bp.cpc.annees,
+      datasets: [
+        {
+          type: 'bar', label: "Chiffre d'affaires", data: bp.cpc.ca,
+          backgroundColor: barColorsForYear(), borderRadius: 6, maxBarThickness: 46, order: 2,
+        },
+        {
+          type: 'line', label: 'Résultat net', data: bp.cpc.resultatNet,
+          borderColor: COLOR_NAVY, backgroundColor: COLOR_NAVY, borderWidth: 2.5,
+          pointRadius: (c) => (c.dataIndex === selectedYear ? 7 : 4),
+          pointBackgroundColor: COLOR_NAVY, pointBorderColor: '#fff', pointBorderWidth: 2,
+          tension: 0.35, fill: false, order: 1,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
+      plugins: {
+        legend: { position: 'bottom', labels: LEGEND_LABELS },
+        tooltip: { ...TOOLTIP_BASE, callbacks: { label: (c) => `${c.dataset.label} : ${fmtDH(c.parsed.y)}` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11.5 }, color: '#6B7C93' } },
+        y: { grid: { color: '#E3E9F2' }, border: { display: false }, ticks: { callback: (v) => fmtCompactDH(v), font: AXIS_TICK_FONT, color: '#6B7C93' } },
+      },
+    },
+  });
+}
 
 const centerTextPlugin = {
   id: 'centerText',
@@ -97,56 +212,11 @@ const centerTextPlugin = {
   },
 };
 
-function renderDashboardCharts(bp) {
-  const annees = bp.cpc.annees;
-
-  const ctx1 = document.getElementById('chartCaResultat').getContext('2d');
-  if (chartCaResultat) chartCaResultat.destroy();
-  chartCaResultat = new Chart(ctx1, {
-    data: {
-      labels: annees,
-      datasets: [
-        {
-          type: 'bar', label: "Chiffre d'affaires", data: bp.cpc.ca,
-          backgroundColor: '#0F9D58', borderRadius: 6, maxBarThickness: 46, order: 2,
-        },
-        {
-          type: 'line', label: 'Résultat net', data: bp.cpc.resultatNet,
-          borderColor: '#0B2545', backgroundColor: '#0B2545', borderWidth: 2.5,
-          pointRadius: 4, pointBackgroundColor: '#0B2545', pointBorderColor: '#fff', pointBorderWidth: 2,
-          tension: 0.35, fill: false, order: 1,
-        },
-      ],
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'index', intersect: false },
-      plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16, font: { family: 'Inter', size: 11.5 }, color: '#33415C' },
-        },
-        tooltip: {
-          backgroundColor: '#0B2545', titleColor: '#fff', bodyColor: '#EAF2FF', padding: 10, cornerRadius: 8,
-          titleFont: { family: 'Space Grotesk', size: 12, weight: '700' }, bodyFont: { family: 'Inter', size: 12 },
-          callbacks: { label: (ctx) => `${ctx.dataset.label} : ${fmtDH(ctx.parsed.y)}` },
-        },
-      },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11.5 }, color: '#6B7C93' } },
-        y: {
-          grid: { color: '#E3E9F2' }, border: { display: false },
-          ticks: { callback: (v) => fmtCompactDH(v), font: { family: 'Inter', size: 11 }, color: '#6B7C93' },
-        },
-      },
-    },
-  });
-
+function renderChartFinancement(bp) {
   const ressources = bp.pf.ressources.slice(0, 3).filter(([, montant]) => montant > 0);
-  const ctx2 = document.getElementById('chartFinancement').getContext('2d');
+  const ctx = document.getElementById('chartFinancement').getContext('2d');
   if (chartFinancement) chartFinancement.destroy();
-  chartFinancement = new Chart(ctx2, {
+  chartFinancement = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels: ressources.map(([label]) => label),
@@ -161,12 +231,9 @@ function renderDashboardCharts(bp) {
       maintainAspectRatio: false,
       cutout: '68%',
       plugins: {
-        legend: {
-          position: 'bottom',
-          labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 14, font: { family: 'Inter', size: 11 }, color: '#33415C' },
-        },
+        legend: { position: 'bottom', labels: { ...LEGEND_LABELS, boxWidth: 8, padding: 14, font: { family: 'Inter', size: 11 } } },
         tooltip: {
-          backgroundColor: '#0B2545', titleColor: '#fff', bodyColor: '#EAF2FF', padding: 10, cornerRadius: 8,
+          ...TOOLTIP_BASE,
           callbacks: {
             label: (ctx) => {
               const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
@@ -181,9 +248,115 @@ function renderDashboardCharts(bp) {
   });
 }
 
+function renderChartTresorerie(bp) {
+  const ctx = document.getElementById('chartTresorerie').getContext('2d');
+  if (chartTresorerie) chartTresorerie.destroy();
+  chartTresorerie = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: bp.cpc.annees,
+      datasets: [{
+        label: 'Trésorerie estimée', data: bp.bilan.actif.rows[2][1],
+        borderColor: COLOR_NAVY, backgroundColor: 'rgba(11,37,69,.08)', fill: true, tension: 0.35, borderWidth: 2.5,
+        pointRadius: (c) => (c.dataIndex === selectedYear ? 7 : 4),
+        pointBackgroundColor: (c) => (c.dataIndex === selectedYear ? COLOR_EMERALD : COLOR_NAVY),
+        pointBorderColor: '#fff', pointBorderWidth: 2,
+      }],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TOOLTIP_BASE, callbacks: { label: (c) => `Trésorerie : ${fmtDH(c.parsed.y)}` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11.5 }, color: '#6B7C93' } },
+        y: { grid: { color: '#E3E9F2' }, border: { display: false }, ticks: { callback: (v) => fmtCompactDH(v), font: AXIS_TICK_FONT, color: '#6B7C93' } },
+      },
+    },
+  });
+}
+
+function renderChartRatios(bp) {
+  const ctx = document.getElementById('chartRatios').getContext('2d');
+  if (chartRatios) chartRatios.destroy();
+  chartRatios = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: bp.cpc.annees,
+      datasets: [
+        {
+          label: 'Marge nette', data: bp.ratios[0].vals,
+          borderColor: COLOR_EMERALD, backgroundColor: COLOR_EMERALD, borderWidth: 2.5, tension: 0.35, fill: false,
+          pointRadius: (c) => (c.dataIndex === selectedYear ? 7 : 4), pointBackgroundColor: COLOR_EMERALD, pointBorderColor: '#fff', pointBorderWidth: 2,
+        },
+        {
+          label: 'Autonomie financière', data: bp.ratios[4].vals,
+          borderColor: COLOR_AMBER, backgroundColor: COLOR_AMBER, borderWidth: 2.5, tension: 0.35, fill: false,
+          pointRadius: (c) => (c.dataIndex === selectedYear ? 7 : 4), pointBackgroundColor: COLOR_AMBER, pointBorderColor: '#fff', pointBorderWidth: 2,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
+      plugins: {
+        legend: { position: 'bottom', labels: LEGEND_LABELS },
+        tooltip: { ...TOOLTIP_BASE, callbacks: { label: (c) => `${c.dataset.label} : ${fmtPct(c.parsed.y)}` } },
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11.5 }, color: '#6B7C93' } },
+        y: { grid: { color: '#E3E9F2' }, border: { display: false }, ticks: { callback: (v) => v.toFixed(0) + '%', font: AXIS_TICK_FONT, color: '#6B7C93' } },
+      },
+    },
+  });
+}
+
+// Les Soldes Intermédiaires de Gestion (SIG) sont les cascades officielles du
+// moteur financier (server/services/financialEngine.js::genererSIG) — on ne
+// reprend ici que les lignes "bold" (soldes) déjà calculées, pour l'année
+// sélectionnée, sans aucun recalcul côté client.
+function renderSigChart(bp, yearIndex) {
+  const rows = bp.sig.filter((r) => r.bold);
+  const labels = rows.map((r) => r.label.replace(/^=\s*/, ''));
+  const data = rows.map((r) => r.vals[yearIndex]);
+  const colors = data.map((v) => (v < 0 ? COLOR_WARN : COLOR_EMERALD));
+
+  const ctx = document.getElementById('chartSig').getContext('2d');
+  if (chartSig) chartSig.destroy();
+  chartSig = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets: [{ label: 'Montant', data, backgroundColor: colors, borderRadius: 6, maxBarThickness: 26 }] },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { ...TOOLTIP_BASE, callbacks: { label: (c) => fmtDH(c.parsed.x) } },
+      },
+      scales: {
+        x: { grid: { color: '#E3E9F2' }, border: { display: false }, ticks: { callback: (v) => fmtCompactDH(v), font: AXIS_TICK_FONT, color: '#6B7C93' } },
+        y: { grid: { display: false }, ticks: { font: { family: 'Inter', size: 11.5 }, color: '#33415C' } },
+      },
+    },
+  });
+}
+
 function renderDashboard(bp) {
-  renderDashboardKpis(bp);
-  renderDashboardCharts(bp);
+  currentBp = bp;
+  selectedYear = 0;
+  renderYearTabs(bp);
+  renderStaticKpis(bp);
+  renderYearKpis(bp, selectedYear);
+  renderChartCaResultat(bp);
+  renderChartFinancement(bp);
+  renderSigChart(bp, selectedYear);
+  renderChartTresorerie(bp);
+  renderChartRatios(bp);
 }
 
 // ==================== Téléchargement PDF ====================

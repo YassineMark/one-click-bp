@@ -39,8 +39,27 @@
   .kpi .kpi-value{ font-size:20px; font-weight:700; color:var(--navy); margin-top:6px; font-family:'IBM Plex Mono',monospace; letter-spacing:-.3px; }
   .kpi.neg .kpi-value{ color:var(--warn); }
 
+  /* ---------- Year filter (slicer) ---------- */
+  .year-filter{ display:flex; align-items:center; gap:14px; margin-bottom:24px; flex-wrap:wrap; }
+  .year-filter .yf-label{ font-size:12.5px; color:var(--muted); font-weight:700; display:flex; align-items:center; gap:7px; }
+  .year-tabs{ display:flex; gap:4px; background:var(--paper); border-radius:11px; padding:4px; }
+  .year-tab{
+    padding:8px 20px; border:none; background:transparent; border-radius:8px; font-weight:700;
+    font-size:13px; color:var(--muted); cursor:pointer; transition:.15s; font-family:'Space Grotesk',sans-serif;
+  }
+  .year-tab:hover{ color:var(--navy); }
+  .year-tab.active{ background:#fff; color:var(--navy); box-shadow:0 2px 8px rgba(11,37,69,.14); }
+
+  /* ---------- KPI group labels ---------- */
+  .kpi-group-label{
+    font-size:11.5px; font-weight:700; color:var(--navy2); text-transform:uppercase; letter-spacing:.5px;
+    margin:0 0 11px; display:flex; align-items:center; gap:8px;
+  }
+  .kpi.updating{ animation:kpi-pulse .35s ease; }
+  @keyframes kpi-pulse{ 0%{ transform:scale(1); } 45%{ transform:scale(1.035); } 100%{ transform:scale(1); } }
+
   /* ---------- Chart cards ---------- */
-  .dashboard-charts{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:28px; align-items:stretch; }
+  .dashboard-charts{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:22px; align-items:stretch; }
   @media (max-width: 900px){ .dashboard-charts{ grid-template-columns:1fr; } }
   .chart-card{
     background:var(--card); border-radius:16px; padding:22px 24px 18px; border:1px solid var(--line);
@@ -51,6 +70,9 @@
   .chart-card h4{ font-size:14px; color:var(--navy); font-family:'Space Grotesk',sans-serif; font-weight:700; }
   .chart-card .cc-sub{ font-size:12px; color:var(--muted); margin:2px 0 14px; }
   .chart-card .chart-wrap{ position:relative; flex:1; min-height:240px; }
+  .chart-card.tall{ margin-bottom:22px; }
+  .chart-card.tall .chart-wrap{ min-height:300px; }
+  .chart-card canvas{ cursor:pointer; }
 
   /* ---------- Section cards (Le projet, Produits, Financement, Exploitation, Langue) ---------- */
   .section-card{ background:var(--card); border-radius:16px; border:1px solid var(--line); box-shadow:0 2px 12px rgba(11,37,69,.06); overflow:hidden; }
@@ -141,18 +163,46 @@
         <button type="button" id="downloadDashboardBtn" class="btn btn-primary btn-sm">📄 Télécharger en PDF</button>
       </div>
 
-      <div class="kpi-grid" id="kpiGrid"></div>
+      <div class="year-filter">
+        <span class="yf-label">🗓️ Résultats affichés pour :</span>
+        <div class="year-tabs" id="yearTabs"></div>
+      </div>
+
+      <div class="kpi-group-label"><span>📌</span> Vue d'ensemble du projet</div>
+      <div class="kpi-grid" id="kpiGridStatic"></div>
+
+      <div class="kpi-group-label" id="kpiYearLabel"><span>📅</span> Résultats — Année 1</div>
+      <div class="kpi-grid" id="kpiGridYear"></div>
 
       <div class="dashboard-charts">
         <div class="chart-card">
           <div class="cc-head"><span class="cc-icon">📈</span><h4>Chiffre d'affaires &amp; résultat net</h4></div>
-          <div class="cc-sub">Projection sur 3 ans</div>
+          <div class="cc-sub">Projection sur 3 ans — cliquez sur une barre pour changer l'année</div>
           <div class="chart-wrap"><canvas id="chartCaResultat"></canvas></div>
         </div>
         <div class="chart-card">
           <div class="cc-head"><span class="cc-icon">💰</span><h4>Plan de financement</h4></div>
           <div class="cc-sub">Répartition des ressources</div>
           <div class="chart-wrap"><canvas id="chartFinancement"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-card tall">
+        <div class="cc-head"><span class="cc-icon">🧮</span><h4>Soldes intermédiaires de gestion</h4></div>
+        <div class="cc-sub" id="sigSub">Résultats détaillés — Année 1</div>
+        <div class="chart-wrap"><canvas id="chartSig"></canvas></div>
+      </div>
+
+      <div class="dashboard-charts">
+        <div class="chart-card">
+          <div class="cc-head"><span class="cc-icon">🏦</span><h4>Trésorerie estimée</h4></div>
+          <div class="cc-sub">Évolution sur 3 ans</div>
+          <div class="chart-wrap"><canvas id="chartTresorerie"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="cc-head"><span class="cc-icon">🛡️</span><h4>Indicateurs de rentabilité</h4></div>
+          <div class="cc-sub">Marge nette &amp; autonomie financière</div>
+          <div class="chart-wrap"><canvas id="chartRatios"></canvas></div>
         </div>
       </div>
     </div>
