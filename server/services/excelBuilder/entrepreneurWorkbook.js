@@ -24,9 +24,12 @@ import {
 // Constantes de style
 // ---------------------------------------------------------------------------
 const NAVY = "FF0B2545";
+const NAVY2 = "FF13315C";
 const WHITE = "FFFFFFFF";
 const EMERALD = "FF0F9D58";
-const LIGHT_FILL = "FFF2F6FA";
+const EMERALD2 = "FF0BC07A";
+const LIGHT_FILL = "FFF4F7FB";
+const BORDER_LINE = "FFE3E9F2";
 
 const CURRENCY_FMT = '#,##0" DH"';
 const PCT_FMT = '0.0"%"';
@@ -362,20 +365,21 @@ function sanitizeSheetName(name) {
 }
 
 function styleTitleCell(cell) {
-  cell.font = { bold: true, size: 16, color: { argb: EMERALD } };
+  cell.font = { bold: true, size: 18, color: { argb: EMERALD } };
 }
 function styleHeaderRow(row) {
   row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.border = { bottom: { style: "medium", color: { argb: EMERALD } } };
   });
-  row.height = 22;
+  row.height = 23;
 }
 function styleTotalRow(row) {
   row.eachCell((cell) => {
-    cell.font = { bold: true };
-    cell.border = { top: { style: "thin" } };
+    cell.font = { bold: true, color: { argb: NAVY } };
+    cell.border = { top: { style: "medium", color: { argb: NAVY } } };
   });
 }
 function styleSectionRow(row) {
@@ -383,6 +387,23 @@ function styleSectionRow(row) {
     cell.font = { bold: true, color: { argb: NAVY } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_FILL } };
   });
+  row.getCell(1).border = { left: { style: "medium", color: { argb: EMERALD } } };
+  row.height = 20;
+}
+
+// Applique un léger alternat de fond (façon "zebra") sur une plage de lignes
+// déjà écrites, sans toucher aux valeurs/formats déjà posés — purement
+// cosmétique, pour la lisibilité des tableaux de plusieurs lignes.
+function zebraStripe(ws, firstRow, lastRow, numCols) {
+  for (let r = firstRow; r <= lastRow; r++) {
+    if ((r - firstRow) % 2 === 1) {
+      const row = ws.getRow(r);
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        if (!cell.fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_FILL } };
+      }
+    }
+  }
 }
 
 /**
@@ -404,8 +425,12 @@ function addSheet(wb, index, titleKey, lang, { orientation = "landscape", freeze
 function addTitle(ws, text, span = 4) {
   ws.addRow([]);
   const row = ws.addRow([text]);
+  row.height = 26;
   styleTitleCell(row.getCell(1));
   if (span > 1) ws.mergeCells(row.number, 1, row.number, span);
+  for (let c = 1; c <= span; c++) {
+    row.getCell(c).border = { bottom: { style: "medium", color: { argb: EMERALD2 } } };
+  }
   ws.addRow([]);
   return row;
 }
@@ -795,6 +820,7 @@ function buildFinancement(wb, bp, formData, lang) {
     rowCursor++;
   }
   const lastDataRow = rowCursor - 1;
+  zebraStripe(ws, firstDataRow, lastDataRow, 5);
   writeAt(rowCursor, 1, trPf(lang, emploisTotal[0]));
   writeAt(rowCursor, 2, { formula: `SUM(B${firstDataRow}:B${lastDataRow})` }, { numFmt: CURRENCY_FMT });
   writeAt(rowCursor, 4, trPf(lang, ressourcesTotal[0]));
@@ -858,6 +884,7 @@ function renderProduitsTableCompact(ws, formData, lang) {
     row.getCell(4).numFmt = CURRENCY_FMT;
   }
   const lastDataRow = ws.rowCount;
+  zebraStripe(ws, firstDataRow, lastDataRow, 4);
   const totalRow = ws.addRow([tr2(lang, "totalLbl"), "", "", { formula: `SUM(D${firstDataRow}:D${lastDataRow})` }]);
   totalRow.getCell(4).numFmt = CURRENCY_FMT;
   styleTotalRow(totalRow);
@@ -890,6 +917,7 @@ function buildCharges(wb, bp, formData, lang) {
     row.getCell(2).numFmt = CURRENCY_FMT;
   }
   const lastDataRow = ws.rowCount;
+  zebraStripe(ws, firstDataRow, lastDataRow, 2);
   const totalRow = ws.addRow([tr2(lang, "charges_totalLbl"), { formula: `SUM(B${firstDataRow}:B${lastDataRow})` }]);
   totalRow.getCell(2).numFmt = CURRENCY_FMT;
   styleTotalRow(totalRow);
@@ -913,6 +941,7 @@ function buildCharges(wb, bp, formData, lang) {
     row.getCell(3).numFmt = CURRENCY_FMT;
     row.getCell(4).numFmt = CURRENCY_FMT;
   }
+  zebraStripe(ws, header2.number + 1, header2.number + cpcChargesRows.length, 4);
 }
 
 // ---------------------------------------------------------------------------
@@ -935,6 +964,7 @@ function buildCPC(wb, bp, formData, lang) {
     row.getCell(4).numFmt = CURRENCY_FMT;
     if (CPC_BOLD_LABELS.has(r.label)) styleTotalRow(row);
   }
+  zebraStripe(ws, header.number + 1, header.number + bp.cpc.rows.length, 4);
 }
 
 // ---------------------------------------------------------------------------
@@ -961,6 +991,7 @@ function buildTresorerie(wb, bp, formData, lang) {
     for (let c = 2; c <= 11; c++) row.getCell(c).numFmt = CURRENCY_FMT;
   }
   const lastDataRow = ws.rowCount;
+  zebraStripe(ws, firstDataRow, lastDataRow, 11);
 
   ws.addRow([]);
   const sub = ws.addRow([tr2(lang, "treso_graphTitle")]);
@@ -1060,6 +1091,7 @@ function buildAnalyseFinanciere(wb, bp, formData, lang) {
     }
     row.getCell(5).alignment = { wrapText: true };
   }
+  zebraStripe(ws, header.number + 1, header.number + bp.ratios.length, 5);
 }
 
 // ---------------------------------------------------------------------------

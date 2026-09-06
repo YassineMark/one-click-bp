@@ -29,13 +29,15 @@ const LOGO_WHITE_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)
 // Constantes visuelles
 // ---------------------------------------------------------------------------
 const NAVY = "#0B2545";
+const NAVY2 = "#13315C";
 const EMERALD = "#0F9D58";
+const EMERALD2 = "#0BC07A";
 const RED = "#C0392B";
-const TEXT_DARK = "#1A1A1A";
-const TEXT_MUTED = "#5A5A5A";
-const BORDER = "#CCCCCC";
-const HEADER_BG = "#E9EEF3";
-const ROW_ALT = "#F7F7F7";
+const TEXT_DARK = "#1A2233";
+const TEXT_MUTED = "#6B7C93";
+const BORDER = "#E3E9F2";
+const HEADER_BG = NAVY;
+const ROW_ALT = "#F4F7FB";
 
 const FOOTER_NOTE_BANK =
   "One Click BP — document généré automatiquement. Simulation non contractuelle, hypothèses à valider avec un expert-comptable agréé.";
@@ -66,6 +68,19 @@ for (const step of WIZARD_STEPS) {
 // ---------------------------------------------------------------------------
 // Petits utilitaires
 // ---------------------------------------------------------------------------
+// Les polices standard (Helvetica...) de pdfkit utilisent l'encodage WinAnsi,
+// qui ne couvre pas certains symboles Unicode (≤, ≥, flèches) présents dans
+// des libellés saisis ailleurs dans l'app (ex: critères d'éligibilité) — ils
+// s'affichaient comme des caractères corrompus. On les substitue ici par
+// leur équivalent ASCII avant tout rendu de texte "dynamique".
+function safeText(str) {
+  return String(str ?? "")
+    .replace(/≤/g, "<=")
+    .replace(/≥/g, ">=")
+    .replace(/→/g, "->")
+    .replace(/←/g, "<-");
+}
+
 function pct(a, b) {
   return b > 0 ? Math.round((a / b) * 100) : 0;
 }
@@ -93,10 +108,14 @@ function currentPageIndex(doc) {
 
 function sectionHeaderRaw(doc, title, CW) {
   const x = doc.page.margins.left;
-  doc.font("Helvetica-Bold").fontSize(14).fillColor(NAVY).text(title, x, doc.y, { width: CW });
-  const ruleY = doc.y + 2;
-  doc.moveTo(x, ruleY).lineTo(x + CW, ruleY).lineWidth(2).strokeColor(EMERALD).stroke();
-  doc.y = ruleY + 10;
+  const chipW = 4, chipH = 15, gap = 10;
+  const titleY = doc.y;
+  doc.rect(x, titleY + 2, chipW, chipH).fill(EMERALD);
+  doc.font("Helvetica-Bold").fontSize(14).fillColor(NAVY).text(title, x + chipW + gap, titleY, { width: CW - chipW - gap });
+  const titleW = doc.widthOfString(title);
+  const ruleY = doc.y + 3;
+  doc.moveTo(x + chipW + gap, ruleY).lineTo(x + chipW + gap + Math.min(titleW, CW - chipW - gap), ruleY).lineWidth(1.5).strokeColor(EMERALD2).stroke();
+  doc.y = ruleY + 11;
   doc.x = x;
   doc.font("Helvetica").fontSize(10).fillColor(TEXT_DARK);
 }
@@ -120,27 +139,29 @@ function subheading(doc, text, CW) {
 
 function kv(doc, label, value, CW) {
   if (value === undefined || value === null || value === "") return;
-  const str = typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value);
-  const full = `${label} : ${str}`;
+  const label2 = safeText(label);
+  const str = typeof value === "boolean" ? (value ? "Oui" : "Non") : safeText(value);
+  const full = `${label2} : ${str}`;
   doc.font("Helvetica").fontSize(9.5);
   const h = doc.heightOfString(full, { width: CW });
   ensureSpace(doc, h + 4);
   const x = doc.page.margins.left;
   const y0 = doc.y;
-  doc.font("Helvetica-Bold").fillColor(TEXT_DARK).text(`${label} : `, x, y0, { continued: true, width: CW });
-  doc.font("Helvetica").fillColor("#333333").text(str);
+  doc.font("Helvetica-Bold").fillColor(TEXT_DARK).text(`${label2} : `, x, y0, { continued: true, width: CW });
+  doc.font("Helvetica").fillColor(TEXT_MUTED).text(str);
   doc.moveDown(0.15);
   doc.x = x;
 }
 
 function paragraph(doc, text, CW, opts = {}) {
   if (!text) return;
+  const str = safeText(text);
   const size = opts.size || 9.5;
   doc.font(opts.bold ? "Helvetica-Bold" : "Helvetica").fontSize(size).fillColor(opts.color || TEXT_DARK);
-  const h = doc.heightOfString(String(text), { width: CW });
+  const h = doc.heightOfString(str, { width: CW });
   ensureSpace(doc, h + 4);
   const x = doc.page.margins.left;
-  doc.text(String(text), x, doc.y, { width: CW, align: opts.align || "left" });
+  doc.text(str, x, doc.y, { width: CW, align: opts.align || "left" });
   doc.moveDown(opts.gap ?? 0.4);
   doc.x = x;
   doc.fillColor(TEXT_DARK).font("Helvetica").fontSize(9.5);
@@ -150,12 +171,13 @@ function bulletList(doc, items, CW) {
   const x = doc.page.margins.left;
   items.forEach((item) => {
     const w = CW - 14;
+    const str = safeText(item);
     doc.font("Helvetica").fontSize(9.5);
-    const h = doc.heightOfString(String(item), { width: w });
+    const h = doc.heightOfString(str, { width: w });
     ensureSpace(doc, h + 8);
     const y0 = doc.y;
     doc.fillColor(EMERALD).circle(x + 3, y0 + 5, 1.8).fill();
-    doc.fillColor(TEXT_DARK).font("Helvetica").fontSize(9.5).text(String(item), x + 12, y0, { width: w });
+    doc.fillColor(TEXT_DARK).font("Helvetica").fontSize(9.5).text(str, x + 12, y0, { width: w });
     doc.moveDown(0.35);
     doc.x = x;
   });
@@ -163,25 +185,29 @@ function bulletList(doc, items, CW) {
 
 function cellHeight(doc, text, width, fontSize = 9) {
   doc.font("Helvetica").fontSize(fontSize);
-  return doc.heightOfString(String(text ?? ""), { width: Math.max(10, width - 8) });
+  return doc.heightOfString(safeText(text), { width: Math.max(10, width - 8) });
 }
 
-function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9, headerFontSize = 9.5, zebra = true, boldRows = [] }) {
+// Tableau "éditorial" : bandeau d'en-tête plein (marque), lignes de données
+// séparées par un simple filet horizontal (pas de quadrillage complet), et un
+// double-filet sous les lignes totalisantes — inspiré des tableaux de bord
+// financiers imprimés plutôt que d'une feuille de calcul brute.
+function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9, headerFontSize = 9, zebra = true, boldRows = [] }) {
   const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+  const headerHeights = headers.map((h, i) => cellHeight(doc, String(h).toUpperCase(), colWidths[i], headerFontSize));
+  const headerH = Math.max(22, ...headerHeights.map((h) => h + 14));
 
   function drawHeaderRow() {
-    ensureSpace(doc, 24);
+    ensureSpace(doc, headerH + 4);
     const y0 = doc.y;
-    doc.rect(x, y0, tableWidth, 20).fill(HEADER_BG);
+    doc.rect(x, y0, tableWidth, headerH).fill(HEADER_BG);
     let cx = x;
-    doc.font("Helvetica-Bold").fontSize(headerFontSize).fillColor(NAVY);
+    doc.font("Helvetica-Bold").fontSize(headerFontSize).fillColor("#FFFFFF");
     headers.forEach((h, i) => {
-      doc.text(String(h), cx + 4, y0 + 5, { width: colWidths[i] - 8, align: align[i] || "left" });
+      doc.text(safeText(h).toUpperCase(), cx + 8, y0 + (headerH - headerHeights[i]) / 2, { width: colWidths[i] - 12, align: align[i] || "left", characterSpacing: 0.2 });
       cx += colWidths[i];
     });
-    doc.strokeColor(BORDER).lineWidth(0.6);
-    doc.rect(x, y0, tableWidth, 20).stroke();
-    doc.y = y0 + 20;
+    doc.y = y0 + headerH;
     doc.x = x;
   }
 
@@ -189,24 +215,27 @@ function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9,
 
   rows.forEach((row, ri) => {
     const heights = row.map((cell, i) => cellHeight(doc, cell, colWidths[i], fontSize));
-    const rh = Math.max(16, ...heights.map((h) => h + 8));
+    const rh = Math.max(18, ...heights.map((h) => h + 10));
     if (doc.y + rh > pageBottom(doc)) {
       doc.addPage();
       drawHeaderRow();
     }
     const y0 = doc.y;
-    if (zebra && ri % 2 === 1) {
+    const isBold = boldRows.includes(ri);
+    if (zebra && !isBold && ri % 2 === 1) {
       doc.rect(x, y0, tableWidth, rh).fill(ROW_ALT);
     }
-    const isBold = boldRows.includes(ri);
-    doc.font(isBold ? "Helvetica-Bold" : "Helvetica").fontSize(fontSize).fillColor(TEXT_DARK);
+    if (isBold) {
+      doc.moveTo(x, y0).lineTo(x + tableWidth, y0).lineWidth(1).strokeColor(NAVY).stroke();
+    }
+    doc.font(isBold ? "Helvetica-Bold" : "Helvetica").fontSize(fontSize).fillColor(isBold ? NAVY : TEXT_DARK);
     let cx = x;
     row.forEach((cell, i) => {
-      doc.text(String(cell ?? ""), cx + 4, y0 + 4, { width: colWidths[i] - 8, align: align[i] || "left" });
+      doc.text(safeText(cell), cx + 8, y0 + 5, { width: colWidths[i] - 12, align: align[i] || "left" });
       cx += colWidths[i];
     });
-    doc.strokeColor(BORDER).lineWidth(0.4);
-    doc.rect(x, y0, tableWidth, rh).stroke();
+    doc.strokeColor(BORDER).lineWidth(0.6);
+    doc.moveTo(x, y0 + rh).lineTo(x + tableWidth, y0 + rh).stroke();
     doc.y = y0 + rh;
     doc.x = x;
   });
@@ -230,22 +259,22 @@ function drawLineChart(doc, { x, y, width, height, labels, values, color = EMERA
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(TEXT_DARK).text(title, x, y, { width });
   }
 
-  doc.lineWidth(0.5).strokeColor("#B9B9B9");
+  doc.lineWidth(0.5).strokeColor(BORDER);
   const steps = 4;
   for (let i = 0; i <= steps; i++) {
     const gy = plotY + plotH - (i / steps) * plotH;
     doc.moveTo(plotX, gy).lineTo(plotX + plotW, gy).stroke();
     const val = min + (i / steps) * range;
-    doc.font("Helvetica").fontSize(6.5).fillColor("#666666").text(fmtDH(val), x, gy - 4, { width: padLeft - 6, align: "right" });
+    doc.font("Helvetica").fontSize(6.5).fillColor(TEXT_MUTED).text(fmtDH(val), x, gy - 4, { width: padLeft - 6, align: "right" });
   }
 
   if (min < 0 && max > 0) {
     const zy = plotY + plotH - ((0 - min) / range) * plotH;
-    doc.strokeColor("#444444").lineWidth(1).moveTo(plotX, zy).lineTo(plotX + plotW, zy).stroke();
+    doc.strokeColor(NAVY).lineWidth(1).moveTo(plotX, zy).lineTo(plotX + plotW, zy).stroke();
   }
 
   const stepX = plotW / Math.max(1, values.length - 1);
-  doc.strokeColor(color).lineWidth(1.5);
+  doc.strokeColor(color).lineWidth(2).lineJoin("round");
   values.forEach((v, i) => {
     const px = plotX + i * stepX;
     const py = plotY + plotH - ((v - min) / range) * plotH;
@@ -257,17 +286,18 @@ function drawLineChart(doc, { x, y, width, height, labels, values, color = EMERA
   values.forEach((v, i) => {
     const px = plotX + i * stepX;
     const py = plotY + plotH - ((v - min) / range) * plotH;
-    doc.fillColor(color).circle(px, py, 1.6).fill();
+    doc.fillColor(color).circle(px, py, 2.6).fill();
+    doc.fillColor("#FFFFFF").circle(px, py, 1.1).fill();
   });
 
-  doc.font("Helvetica").fontSize(6).fillColor("#444444");
+  doc.font("Helvetica").fontSize(6).fillColor(TEXT_MUTED);
   labels.forEach((lab, i) => {
     if (labels.length > 12 && i % 2 === 1) return;
     const px = plotX + i * stepX;
     doc.text(String(lab), px - 10, plotY + plotH + 4, { width: 20, align: "center" });
   });
 
-  doc.strokeColor(BORDER).lineWidth(0.6).rect(plotX, plotY, plotW, plotH).stroke();
+  doc.strokeColor(BORDER).lineWidth(0.75).roundedRect(plotX, plotY, plotW, plotH, 3).stroke();
   doc.x = x;
   return y + height;
 }
@@ -284,44 +314,45 @@ function drawGroupedBarChart(doc, { x, y, width, height, categories, series, tit
     doc.font("Helvetica-Bold").fontSize(9.5).fillColor(TEXT_DARK).text(title, x, y, { width });
   }
 
-  doc.lineWidth(0.5).strokeColor("#B9B9B9");
+  doc.lineWidth(0.5).strokeColor(BORDER);
   const steps = 4;
   for (let i = 0; i <= steps; i++) {
     const gy = plotY + plotH - (i / steps) * plotH;
     doc.moveTo(plotX, gy).lineTo(plotX + plotW, gy).stroke();
     const val = min + (i / steps) * range;
-    doc.font("Helvetica").fontSize(6.5).fillColor("#666666").text(fmtDH(val), x, gy - 4, { width: padLeft - 6, align: "right" });
+    doc.font("Helvetica").fontSize(6.5).fillColor(TEXT_MUTED).text(fmtDH(val), x, gy - 4, { width: padLeft - 6, align: "right" });
   }
 
   const zeroY = plotY + plotH - ((0 - min) / range) * plotH;
-  doc.strokeColor("#444444").lineWidth(1).moveTo(plotX, zeroY).lineTo(plotX + plotW, zeroY).stroke();
+  doc.strokeColor(NAVY).lineWidth(1).moveTo(plotX, zeroY).lineTo(plotX + plotW, zeroY).stroke();
 
   const groupCount = categories.length;
   const groupW = plotW / groupCount;
   const gap = 6;
   const barW = Math.max(4, (groupW - gap * (series.length + 1)) / series.length);
+  const radius = Math.min(2.5, barW / 2);
 
   categories.forEach((cat, gi) => {
     const gx = plotX + gi * groupW;
     series.forEach((s, si) => {
       const v = s.values[gi];
-      const barH = (Math.abs(v) / range) * plotH;
+      const barH = Math.max(0.5, (Math.abs(v) / range) * plotH);
       const bx = gx + gap + si * (barW + gap);
       const by = v >= 0 ? zeroY - barH : zeroY;
-      doc.fillColor(s.color || EMERALD).rect(bx, by, barW, Math.max(0.5, barH)).fill();
+      doc.fillColor(s.color || EMERALD).roundedRect(bx, by, barW, barH, radius).fill();
     });
-    doc.font("Helvetica").fontSize(7.5).fillColor("#333333").text(cat, gx, plotY + plotH + 6, { width: groupW, align: "center" });
+    doc.font("Helvetica").fontSize(7.5).fillColor(TEXT_MUTED).text(cat, gx, plotY + plotH + 6, { width: groupW, align: "center" });
   });
 
   let lx = plotX;
-  const ly = y + height - 12;
+  const ly = y + height - 10;
   series.forEach((s) => {
-    doc.fillColor(s.color || EMERALD).rect(lx, ly, 8, 8).fill();
-    doc.fillColor("#333333").font("Helvetica").fontSize(7.5).text(s.name, lx + 11, ly - 1);
+    doc.fillColor(s.color || EMERALD).circle(lx + 3, ly + 3, 3.5).fill();
+    doc.fillColor(TEXT_DARK).font("Helvetica").fontSize(7.5).text(s.name, lx + 11, ly - 1);
     lx += doc.widthOfString(s.name) + 34;
   });
 
-  doc.strokeColor(BORDER).lineWidth(0.6).rect(plotX, plotY, plotW, plotH).stroke();
+  doc.strokeColor(BORDER).lineWidth(0.75).roundedRect(plotX, plotY, plotW, plotH, 3).stroke();
   doc.x = x;
   return y + height;
 }
@@ -331,8 +362,16 @@ function drawGroupedBarChart(doc, { x, y, width, height, categories, series, tit
 // ---------------------------------------------------------------------------
 function drawCover(doc, bp, formData) {
   const { width, height } = doc.page;
-  doc.rect(0, 0, width, height).fill(NAVY);
-  doc.fillColor(EMERALD).rect(0, height * 0.46, width, 4).fill();
+  // Dégradé navy -> navy2 -> une pointe d'émeraude, repris du bandeau "hero"
+  // de l'application web (même trio de couleurs, même logique diagonale).
+  const bg = doc.linearGradient(0, 0, width, height);
+  bg.stop(0, NAVY).stop(0.62, NAVY2).stop(1, EMERALD);
+  doc.rect(0, 0, width, height).fill(bg);
+
+  const dividerY = height * 0.46;
+  const divider = doc.linearGradient(0, dividerY, width, dividerY);
+  divider.stop(0, EMERALD).stop(1, EMERALD2);
+  doc.rect(0, dividerY, width, 3).fill(divider);
 
   try {
     doc.image(LOGO_WHITE_PATH, 50, 46, { width: 150 });
@@ -340,12 +379,12 @@ function drawCover(doc, bp, formData) {
     doc.fillColor("#C7D6EC").font("Helvetica-Bold").fontSize(10).text("ONE CLICK BP", 50, 56);
   }
 
-  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(24);
+  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(25);
   doc.text("DOSSIER DE FINANCEMENT", 50, height * 0.26, { width: width - 100 });
   doc.text("BUSINESS PLAN", 50, doc.y + 2, { width: width - 100 });
 
   const nomProjet = formData?.projet?.nomProjet || bp.inputs.nomProjet || "Projet";
-  doc.fillColor("#DCE6F5").font("Helvetica").fontSize(14).text(nomProjet, 50, height * 0.46 + 18, { width: width - 100 });
+  doc.fillColor("#DCE6F5").font("Helvetica").fontSize(14).text(nomProjet, 50, height * 0.46 + 20, { width: width - 100 });
 
   const dateStr = new Date(bp.generatedAt || Date.now()).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
   doc.fillColor("#AFC3DD").font("Helvetica").fontSize(10.5);
@@ -363,15 +402,27 @@ function drawTocPage(doc, entries, CW) {
   sectionHeaderRaw(doc, "Sommaire", CW);
   const x = doc.page.margins.left;
   const numColW = 34;
+  const rowH = 24;
   entries.forEach((entry) => {
-    ensureSpace(doc, 22);
+    ensureSpace(doc, rowH);
     const y0 = doc.y;
     doc.font("Helvetica").fontSize(10).fillColor(TEXT_DARK);
-    doc.text(entry.title, x, y0, { width: CW - numColW - 10 });
+    doc.text(entry.title, x, y0 + 2, { width: CW - numColW - 10 });
+
+    const textW = Math.min(doc.widthOfString(entry.title), CW - numColW - 10);
+    const leaderX0 = x + textW + 6;
+    const leaderX1 = x + CW - numColW - 6;
+    if (leaderX1 > leaderX0) {
+      doc.dash(0.6, { space: 2.6 }).strokeColor(BORDER).lineWidth(0.8)
+        .moveTo(leaderX0, y0 + 9).lineTo(leaderX1, y0 + 9).stroke();
+      doc.undash();
+    }
+
     entry.rowPage = currentPageIndex(doc);
-    entry.rowY = y0;
+    entry.rowY = y0 + 2;
     entry.rowX = x + CW - numColW;
-    doc.y = Math.max(doc.y, y0 + 18);
+    doc.y = y0 + rowH;
+    doc.strokeColor(BORDER).lineWidth(0.5).moveTo(x, doc.y - 5).lineTo(x + CW, doc.y - 5).stroke();
     doc.x = x;
   });
 }
@@ -414,8 +465,8 @@ function drawResume(doc, bp, formData, toc, CW) {
   kv(doc, "Crédit bancaire sollicité", `${fmtDH(inputs.credit)} sur ${inputs.dureeCredit} ans, taux indicatif ${inputs.tauxInteret}%`, CW);
   if (inputs.subventions > 0) kv(doc, "Subventions envisagées", fmtDH(inputs.subventions), CW);
   if (inputs.autresFinancements > 0) kv(doc, "Autres financements", fmtDH(inputs.autresFinancements), CW);
-  kv(doc, "Chiffre d'affaires Année 1 → Année 3", `${fmtDH(cpc.ca[0])} → ${fmtDH(cpc.ca[2])}`, CW);
-  kv(doc, "Résultat net Année 1 → Année 3", `${fmtDH(cpc.resultatNet[0])} → ${fmtDH(cpc.resultatNet[2])}`, CW);
+  kv(doc, "Chiffre d'affaires", `Année 1 : ${fmtDH(cpc.ca[0])}   /   Année 3 : ${fmtDH(cpc.ca[2])}`, CW);
+  kv(doc, "Résultat net", `Année 1 : ${fmtDH(cpc.resultatNet[0])}   /   Année 3 : ${fmtDH(cpc.resultatNet[2])}`, CW);
   kv(doc, "Besoin de financement total (emplois)", fmtDH(pf.totalEmplois), CW);
   doc.moveDown(0.3);
   subheading(doc, "Objet de la demande", CW);

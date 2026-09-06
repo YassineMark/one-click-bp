@@ -11,10 +11,12 @@ import { genererScenarios } from "../narrativeEngine.js";
  */
 
 const NAVY = "FF0B2545";
+const NAVY2 = "FF13315C";
 const EMERALD = "FF0F9D58";
+const EMERALD2 = "FF0BC07A";
 const WHITE = "FFFFFFFF";
-const LIGHT = "FFF3F5F8";
-const AMBER = "FFB45309";
+const LIGHT = "FFF4F7FB";
+const AMBER = "FFB7791F";
 
 const CURRENCY_FMT = '#,##0" DH"';
 const PCT_FMT = '0.0"%"';
@@ -54,9 +56,12 @@ function freezeAt(ws, rowNumber) {
 function titleRow(ws, text, span = 6) {
   const row = ws.addRow([text]);
   ws.mergeCells(row.number, 1, row.number, span);
-  row.getCell(1).font = { bold: true, size: 16, color: { argb: EMERALD } };
+  row.getCell(1).font = { bold: true, size: 18, color: { argb: EMERALD } };
   row.getCell(1).alignment = { vertical: "middle" };
-  row.height = 28;
+  row.height = 30;
+  for (let c = 1; c <= span; c++) {
+    row.getCell(c).border = { bottom: { style: "medium", color: { argb: EMERALD2 } } };
+  }
   return row;
 }
 
@@ -72,6 +77,7 @@ function sectionRow(ws, text, span = 6) {
   const row = ws.addRow([text]);
   ws.mergeCells(row.number, 1, row.number, span);
   row.getCell(1).font = { bold: true, size: 12, color: { argb: NAVY } };
+  row.getCell(1).border = { left: { style: "medium", color: { argb: EMERALD } } };
   row.height = 18;
   return row;
 }
@@ -81,6 +87,7 @@ function styleHeaderRow(row, { align = "left" } = {}) {
     cell.font = { bold: true, color: { argb: WHITE }, size: 10.5 };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
     cell.alignment = { vertical: "middle", horizontal: align, wrapText: true };
+    cell.border = { bottom: { style: "medium", color: { argb: EMERALD } } };
   });
   row.height = 24;
 }
@@ -147,15 +154,19 @@ function sheetPageDeGarde(wb, bp, formData) {
   const ws = newSheet(wb, "01 Page de garde", { widths: [34, 60] });
   ws.mergeCells("A1:B1");
   ws.getCell("A1").value = "DOSSIER DE FINANCEMENT";
-  ws.getCell("A1").font = { bold: true, size: 22, color: { argb: NAVY } };
+  ws.getCell("A1").font = { bold: true, size: 22, color: { argb: WHITE } };
+  ws.getCell("A1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
   ws.getCell("A1").alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(1).height = 46;
+  ws.getCell("B1").fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
+  ws.getRow(1).height = 50;
 
   ws.mergeCells("A2:B2");
   ws.getCell("A2").value = safe(bp.inputs.nomProjet, "Projet");
-  ws.getCell("A2").font = { bold: true, size: 16, color: { argb: EMERALD } };
+  ws.getCell("A2").font = { bold: true, size: 16, color: { argb: WHITE } };
+  ws.getCell("A2").fill = { type: "pattern", pattern: "solid", fgColor: { argb: EMERALD } };
   ws.getCell("A2").alignment = { horizontal: "center", vertical: "middle" };
-  ws.getRow(2).height = 30;
+  ws.getCell("B2").fill = { type: "pattern", pattern: "solid", fgColor: { argb: EMERALD } };
+  ws.getRow(2).height = 32;
 
   ws.addRow([]);
   writeKV(ws, [

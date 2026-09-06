@@ -11,9 +11,10 @@ import { fmtDH } from "../../utils/i18n.js";
 
 const NAVY = "FF0B2545";
 const EMERALD = "FF0F9D58";
+const EMERALD2 = "FF0BC07A";
 const WHITE = "FFFFFFFF";
-const LIGHT = "FFF3F5F8";
-const AMBER = "FFB45309";
+const LIGHT = "FFF4F7FB";
+const AMBER = "FFB7791F";
 
 const CURRENCY_FMT = '#,##0" DH"';
 const DATE_STR = new Date().toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
@@ -46,9 +47,12 @@ function freezeAt(ws, rowNumber) {
 function titleRow(ws, text, span = 2) {
   const row = ws.addRow([text]);
   ws.mergeCells(row.number, 1, row.number, span);
-  row.getCell(1).font = { bold: true, size: 16, color: { argb: EMERALD } };
+  row.getCell(1).font = { bold: true, size: 18, color: { argb: EMERALD } };
   row.getCell(1).alignment = { vertical: "middle" };
-  row.height = 28;
+  row.height = 30;
+  for (let c = 1; c <= span; c++) {
+    row.getCell(c).border = { bottom: { style: "medium", color: { argb: EMERALD2 } } };
+  }
   return row;
 }
 
@@ -57,6 +61,7 @@ function sectionRow(ws, text, span = 2) {
   const row = ws.addRow([text]);
   ws.mergeCells(row.number, 1, row.number, span);
   row.getCell(1).font = { bold: true, size: 12, color: { argb: NAVY } };
+  row.getCell(1).border = { left: { style: "medium", color: { argb: EMERALD } } };
   row.height = 18;
   return row;
 }
@@ -66,6 +71,7 @@ function styleHeaderRow(row, { align = "left" } = {}) {
     cell.font = { bold: true, color: { argb: WHITE }, size: 10.5 };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
     cell.alignment = { vertical: "middle", horizontal: align, wrapText: true };
+    cell.border = { bottom: { style: "medium", color: { argb: EMERALD } } };
   });
   row.height = 24;
 }

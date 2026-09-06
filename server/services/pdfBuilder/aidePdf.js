@@ -19,14 +19,16 @@ const LOGO_WHITE_PATH = path.resolve(path.dirname(fileURLToPath(import.meta.url)
  */
 
 const NAVY = "#0B2545";
+const NAVY2 = "#13315C";
 const EMERALD = "#0F9D58";
+const EMERALD2 = "#0BC07A";
 const RED = "#C0392B";
-const ORANGE = "#E08E00";
-const TEXT_DARK = "#1A1A1A";
-const TEXT_MUTED = "#5A5A5A";
-const BORDER = "#CCCCCC";
-const HEADER_BG = "#E9EEF3";
-const ROW_ALT = "#F7F7F7";
+const ORANGE = "#B7791F";
+const TEXT_DARK = "#1A2233";
+const TEXT_MUTED = "#6B7C93";
+const BORDER = "#E3E9F2";
+const HEADER_BG = NAVY;
+const ROW_ALT = "#F4F7FB";
 
 const FOOTER_NOTE_AIDE =
   "One Click BP — document généré automatiquement à partir des critères déclarés du dispositif. À confirmer auprès de l'organisme officiel.";
@@ -44,6 +46,19 @@ const CRITERE_STATUT_LABEL = { ok: "Rempli", ko: "Non rempli", inconnu: "À vér
 // pour garder les deux générateurs indépendants et évitera un fichier
 // utilitaire partagé hors du périmètre autorisé).
 // ---------------------------------------------------------------------------
+// Les polices standard (Helvetica...) de pdfkit utilisent l'encodage WinAnsi,
+// qui ne couvre pas certains symboles Unicode (≤, ≥, flèches) présents dans
+// des libellés saisis ailleurs dans l'app (ex: critères d'éligibilité dans
+// server/config/aidesMaroc.js) — ils s'affichaient comme des caractères
+// corrompus. On les substitue ici par leur équivalent ASCII avant tout rendu.
+function safeText(str) {
+  return String(str ?? "")
+    .replace(/≤/g, "<=")
+    .replace(/≥/g, ">=")
+    .replace(/→/g, "->")
+    .replace(/←/g, "<-");
+}
+
 function pageBottom(doc) {
   return doc.page.height - doc.page.margins.bottom;
 }
@@ -56,10 +71,14 @@ function currentPageIndex(doc) {
 
 function sectionHeaderRaw(doc, title, CW) {
   const x = doc.page.margins.left;
-  doc.font("Helvetica-Bold").fontSize(14).fillColor(NAVY).text(title, x, doc.y, { width: CW });
-  const ruleY = doc.y + 2;
-  doc.moveTo(x, ruleY).lineTo(x + CW, ruleY).lineWidth(2).strokeColor(EMERALD).stroke();
-  doc.y = ruleY + 10;
+  const chipW = 4, chipH = 15, gap = 10;
+  const titleY = doc.y;
+  doc.rect(x, titleY + 2, chipW, chipH).fill(EMERALD);
+  doc.font("Helvetica-Bold").fontSize(14).fillColor(NAVY).text(title, x + chipW + gap, titleY, { width: CW - chipW - gap });
+  const titleW = doc.widthOfString(title);
+  const ruleY = doc.y + 3;
+  doc.moveTo(x + chipW + gap, ruleY).lineTo(x + chipW + gap + Math.min(titleW, CW - chipW - gap), ruleY).lineWidth(1.5).strokeColor(EMERALD2).stroke();
+  doc.y = ruleY + 11;
   doc.x = x;
   doc.font("Helvetica").fontSize(10).fillColor(TEXT_DARK);
 }
@@ -81,27 +100,29 @@ function subheading(doc, text, CW) {
 
 function kv(doc, label, value, CW) {
   if (value === undefined || value === null || value === "") return;
-  const str = typeof value === "boolean" ? (value ? "Oui" : "Non") : String(value);
-  const full = `${label} : ${str}`;
+  const label2 = safeText(label);
+  const str = typeof value === "boolean" ? (value ? "Oui" : "Non") : safeText(value);
+  const full = `${label2} : ${str}`;
   doc.font("Helvetica").fontSize(9.5);
   const h = doc.heightOfString(full, { width: CW });
   ensureSpace(doc, h + 4);
   const x = doc.page.margins.left;
   const y0 = doc.y;
-  doc.font("Helvetica-Bold").fillColor(TEXT_DARK).text(`${label} : `, x, y0, { continued: true, width: CW });
-  doc.font("Helvetica").fillColor("#333333").text(str);
+  doc.font("Helvetica-Bold").fillColor(TEXT_DARK).text(`${label2} : `, x, y0, { continued: true, width: CW });
+  doc.font("Helvetica").fillColor(TEXT_MUTED).text(str);
   doc.moveDown(0.15);
   doc.x = x;
 }
 
 function paragraph(doc, text, CW, opts = {}) {
   if (!text) return;
+  const str = safeText(text);
   const size = opts.size || 9.5;
   doc.font(opts.bold ? "Helvetica-Bold" : "Helvetica").fontSize(size).fillColor(opts.color || TEXT_DARK);
-  const h = doc.heightOfString(String(text), { width: CW });
+  const h = doc.heightOfString(str, { width: CW });
   ensureSpace(doc, h + 4);
   const x = doc.page.margins.left;
-  doc.text(String(text), x, doc.y, { width: CW, align: opts.align || "left" });
+  doc.text(str, x, doc.y, { width: CW, align: opts.align || "left" });
   doc.moveDown(opts.gap ?? 0.4);
   doc.x = x;
   doc.fillColor(TEXT_DARK).font("Helvetica").fontSize(9.5);
@@ -111,12 +132,13 @@ function bulletList(doc, items, CW, opts = {}) {
   const x = doc.page.margins.left;
   items.forEach((item) => {
     const w = CW - 14;
+    const str = safeText(item);
     doc.font("Helvetica").fontSize(9.5);
-    const h = doc.heightOfString(String(item), { width: w });
+    const h = doc.heightOfString(str, { width: w });
     ensureSpace(doc, h + 8);
     const y0 = doc.y;
     doc.fillColor(opts.dotColor || EMERALD).circle(x + 3, y0 + 5, 1.8).fill();
-    doc.fillColor(opts.color || TEXT_DARK).font(opts.bold ? "Helvetica-Bold" : "Helvetica").fontSize(9.5).text(String(item), x + 12, y0, { width: w });
+    doc.fillColor(opts.color || TEXT_DARK).font(opts.bold ? "Helvetica-Bold" : "Helvetica").fontSize(9.5).text(str, x + 12, y0, { width: w });
     doc.moveDown(0.35);
     doc.x = x;
   });
@@ -124,25 +146,29 @@ function bulletList(doc, items, CW, opts = {}) {
 
 function cellHeight(doc, text, width, fontSize = 9) {
   doc.font("Helvetica").fontSize(fontSize);
-  return doc.heightOfString(String(text ?? ""), { width: Math.max(10, width - 8) });
+  return doc.heightOfString(safeText(text), { width: Math.max(10, width - 8) });
 }
 
-function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9, headerFontSize = 9.5, zebra = true, boldRows = [], rowColors = [] }) {
+// Tableau "éditorial" : bandeau d'en-tête plein (marque), lignes de données
+// séparées par un simple filet horizontal (pas de quadrillage complet), et un
+// double-filet sous les lignes totalisantes — inspiré des tableaux de bord
+// financiers imprimés plutôt que d'une feuille de calcul brute.
+function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9, headerFontSize = 9, zebra = true, boldRows = [], rowColors = [] }) {
   const tableWidth = colWidths.reduce((a, b) => a + b, 0);
+  const headerHeights = headers.map((h, i) => cellHeight(doc, String(h).toUpperCase(), colWidths[i], headerFontSize));
+  const headerH = Math.max(22, ...headerHeights.map((h) => h + 14));
 
   function drawHeaderRow() {
-    ensureSpace(doc, 24);
+    ensureSpace(doc, headerH + 4);
     const y0 = doc.y;
-    doc.rect(x, y0, tableWidth, 20).fill(HEADER_BG);
+    doc.rect(x, y0, tableWidth, headerH).fill(HEADER_BG);
     let cx = x;
-    doc.font("Helvetica-Bold").fontSize(headerFontSize).fillColor(NAVY);
+    doc.font("Helvetica-Bold").fontSize(headerFontSize).fillColor("#FFFFFF");
     headers.forEach((h, i) => {
-      doc.text(String(h), cx + 4, y0 + 5, { width: colWidths[i] - 8, align: align[i] || "left" });
+      doc.text(safeText(h).toUpperCase(), cx + 8, y0 + (headerH - headerHeights[i]) / 2, { width: colWidths[i] - 12, align: align[i] || "left", characterSpacing: 0.2 });
       cx += colWidths[i];
     });
-    doc.strokeColor(BORDER).lineWidth(0.6);
-    doc.rect(x, y0, tableWidth, 20).stroke();
-    doc.y = y0 + 20;
+    doc.y = y0 + headerH;
     doc.x = x;
   }
 
@@ -150,26 +176,29 @@ function drawTable(doc, { x, colWidths, headers, rows, align = [], fontSize = 9,
 
   rows.forEach((row, ri) => {
     const heights = row.map((cell, i) => cellHeight(doc, cell, colWidths[i], fontSize));
-    const rh = Math.max(16, ...heights.map((h) => h + 8));
+    const rh = Math.max(18, ...heights.map((h) => h + 10));
     if (doc.y + rh > pageBottom(doc)) {
       doc.addPage();
       drawHeaderRow();
     }
     const y0 = doc.y;
+    const isBold = boldRows.includes(ri);
     if (rowColors[ri]) {
       doc.rect(x, y0, tableWidth, rh).fill(rowColors[ri]);
-    } else if (zebra && ri % 2 === 1) {
+    } else if (zebra && !isBold && ri % 2 === 1) {
       doc.rect(x, y0, tableWidth, rh).fill(ROW_ALT);
     }
-    const isBold = boldRows.includes(ri);
-    doc.font(isBold ? "Helvetica-Bold" : "Helvetica").fontSize(fontSize).fillColor(TEXT_DARK);
+    if (isBold) {
+      doc.moveTo(x, y0).lineTo(x + tableWidth, y0).lineWidth(1).strokeColor(NAVY).stroke();
+    }
+    doc.font(isBold ? "Helvetica-Bold" : "Helvetica").fontSize(fontSize).fillColor(isBold ? NAVY : TEXT_DARK);
     let cx = x;
     row.forEach((cell, i) => {
-      doc.text(String(cell ?? ""), cx + 4, y0 + 4, { width: colWidths[i] - 8, align: align[i] || "left" });
+      doc.text(safeText(cell), cx + 8, y0 + 5, { width: colWidths[i] - 12, align: align[i] || "left" });
       cx += colWidths[i];
     });
-    doc.strokeColor(BORDER).lineWidth(0.4);
-    doc.rect(x, y0, tableWidth, rh).stroke();
+    doc.strokeColor(BORDER).lineWidth(0.6);
+    doc.moveTo(x, y0 + rh).lineTo(x + tableWidth, y0 + rh).stroke();
     doc.y = y0 + rh;
     doc.x = x;
   });
@@ -196,8 +225,16 @@ function finalizePages(doc, footerNote) {
 // ---------------------------------------------------------------------------
 function drawCover(doc, bp, formData, programme) {
   const { width, height } = doc.page;
-  doc.rect(0, 0, width, height).fill(NAVY);
-  doc.fillColor(EMERALD).rect(0, height * 0.46, width, 4).fill();
+  // Dégradé navy -> navy2 -> une pointe d'émeraude, repris du bandeau "hero"
+  // de l'application web (même trio de couleurs, même logique diagonale).
+  const bg = doc.linearGradient(0, 0, width, height);
+  bg.stop(0, NAVY).stop(0.62, NAVY2).stop(1, EMERALD);
+  doc.rect(0, 0, width, height).fill(bg);
+
+  const dividerY = height * 0.46;
+  const divider = doc.linearGradient(0, dividerY, width, dividerY);
+  divider.stop(0, EMERALD).stop(1, EMERALD2);
+  doc.rect(0, dividerY, width, 3).fill(divider);
 
   try {
     doc.image(LOGO_WHITE_PATH, 50, 46, { width: 150 });
@@ -210,7 +247,7 @@ function drawCover(doc, bp, formData, programme) {
   doc.fontSize(16).text(programme.nomComplet || programme.nom, 50, doc.y + 4, { width: width - 100 });
 
   const nomProjet = formData?.projet?.nomProjet || bp.inputs.nomProjet || "Projet";
-  doc.fillColor("#DCE6F5").font("Helvetica").fontSize(13).text(nomProjet, 50, height * 0.46 + 18, { width: width - 100 });
+  doc.fillColor("#DCE6F5").font("Helvetica").fontSize(13).text(nomProjet, 50, height * 0.46 + 20, { width: width - 100 });
 
   const dateStr = new Date(bp.generatedAt || Date.now()).toLocaleDateString("fr-FR", { year: "numeric", month: "long", day: "numeric" });
   doc.fillColor("#AFC3DD").font("Helvetica").fontSize(10.5);
@@ -231,10 +268,12 @@ function drawStatutPage(doc, bp, formData, programme, CW) {
 
   ensureSpace(doc, 60);
   const x = doc.page.margins.left;
-  const badgeW = 260, badgeH = 40;
-  doc.rect(x, doc.y, badgeW, badgeH).fill(meta.color);
-  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(16).text(meta.label, x, doc.y + 12, { width: badgeW, align: "center" });
-  doc.y += badgeH + 14;
+  doc.font("Helvetica-Bold").fontSize(15);
+  const badgeW = Math.max(220, doc.widthOfString(meta.label) + 64), badgeH = 38;
+  const y0 = doc.y;
+  doc.roundedRect(x, y0, badgeW, badgeH, 8).fill(meta.color);
+  doc.fillColor("#FFFFFF").font("Helvetica-Bold").fontSize(15).text(meta.label, x, y0 + 12, { width: badgeW, align: "center" });
+  doc.y = y0 + badgeH + 16;
   doc.x = x;
 
   kv(doc, "Dispositif", programme.nomComplet || programme.nom, CW);
@@ -249,7 +288,7 @@ function drawStatutPage(doc, bp, formData, programme, CW) {
 // ---------------------------------------------------------------------------
 function drawCriteresTable(doc, programme, CW, opts = {}) {
   const criteres = programme.criteres || [];
-  const rowColors = criteres.map((c) => (c.status === "ko" ? "#FBEAEA" : c.status === "inconnu" ? "#FDF3E3" : undefined));
+  const rowColors = criteres.map((c) => (c.status === "ko" ? "#FDECEC" : c.status === "inconnu" ? "#FDF3EC" : undefined));
   drawTable(doc, {
     x: doc.page.margins.left,
     colWidths: [CW * 0.32, CW * 0.16, CW * 0.52],

@@ -15,7 +15,8 @@ import ExcelJS from "exceljs";
 const NAVY = "FF0B2545";
 const WHITE = "FFFFFFFF";
 const EMERALD = "FF0F9D58";
-const LIGHT_FILL = "FFF2F6FA";
+const EMERALD2 = "FF0BC07A";
+const LIGHT_FILL = "FFF4F7FB";
 const WARN = "FFC0392B";
 
 const CURRENCY_FMT = '#,##0" DH"';
@@ -24,21 +25,37 @@ const PCT_FMT = '0.0"%"';
 const FOOTER = "One Click BP — tableau de bord généré automatiquement à partir de votre business plan.";
 
 function styleTitleCell(cell) {
-  cell.font = { bold: true, size: 16, color: { argb: EMERALD } };
+  cell.font = { bold: true, size: 18, color: { argb: EMERALD } };
 }
 function styleHeaderRow(row) {
   row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: WHITE } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: NAVY } };
     cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+    cell.border = { bottom: { style: "medium", color: { argb: EMERALD } } };
   });
-  row.height = 22;
+  row.height = 23;
 }
 function styleSectionRow(row) {
   row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: NAVY } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_FILL } };
   });
+  row.getCell(1).border = { left: { style: "medium", color: { argb: EMERALD } } };
+}
+
+// Léger alternat de fond sur une plage de lignes déjà écrites (lisibilité
+// des tableaux multi-lignes), sans toucher aux valeurs/formats déjà posés.
+function zebraStripe(ws, firstRow, lastRow, numCols) {
+  for (let r = firstRow; r <= lastRow; r++) {
+    if ((r - firstRow) % 2 === 1) {
+      const row = ws.getRow(r);
+      for (let c = 1; c <= numCols; c++) {
+        const cell = row.getCell(c);
+        if (!cell.fill) cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: LIGHT_FILL } };
+      }
+    }
+  }
 }
 
 function addSheet(wb, name) {
@@ -51,8 +68,12 @@ function addSheet(wb, name) {
 function addTitle(ws, text, span = 2) {
   ws.addRow([]);
   const row = ws.addRow([text]);
+  row.height = 26;
   styleTitleCell(row.getCell(1));
   if (span > 1) ws.mergeCells(row.number, 1, row.number, span);
+  for (let c = 1; c <= span; c++) {
+    row.getCell(c).border = { bottom: { style: "medium", color: { argb: EMERALD2 } } };
+  }
   ws.addRow([]);
   return row;
 }
@@ -133,6 +154,7 @@ function buildVueEnsemble(wb, bp, images) {
       if (vals[i] < 0) cell.font = { color: { argb: WARN }, bold: true };
     }
   }
+  zebraStripe(ws, headerRow.number + 1, headerRow.number + syntheseRows.length, annees.length + 1);
   ws.addRow([]);
 
   addSectionLabel(ws, "Plan de financement", 4);
@@ -180,6 +202,7 @@ function buildAnneeSheet(wb, bp, images, yearIndex) {
     row.getCell(2).numFmt = CURRENCY_FMT;
     if (r.vals[yearIndex] < 0) row.getCell(2).font = { color: { argb: WARN }, bold: true };
   }
+  zebraStripe(ws, headerRow.number + 1, headerRow.number + sigRows.length, 2);
   ws.addRow([]);
 
   addSectionLabel(ws, `Soldes intermédiaires de gestion — ${label}`, 2);
