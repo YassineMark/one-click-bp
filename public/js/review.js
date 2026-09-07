@@ -31,6 +31,11 @@ const TOOLTIP_BASE = {
 };
 const AXIS_TICK_FONT = { family: 'Inter', size: 11 };
 const LEGEND_LABELS = { usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16, font: { family: 'Inter', size: 11.5 }, color: '#33415C' };
+// Anime aussi bien l'entrée initiale que la mise à jour au changement
+// d'année : assez rapide pour rester réactif au clic, assez long pour que le
+// mouvement des barres/points reste lisible (cf. easing "ease-out" pour tout
+// ce qui entre/se redessine à l'écran).
+const ANIMATION_BASE = { duration: 450, easing: 'easeOutQuart' };
 
 // Un seul sélecteur d'année pilote les KPI "par année", le graphique SIG, et
 // le point/barre mis en évidence sur les autres graphiques (façon "slicer"
@@ -107,6 +112,24 @@ function kpiCardHtml(k) {
   `;
 }
 
+// Anime un chiffre affiché de sa valeur précédente vers la nouvelle (ex-out
+// cubic) plutôt qu'un remplacement instantané — le genre de détail qu'on
+// attend d'un vrai tableau de bord financier au changement d'année.
+function animateValue(el, from, to, formatFn, duration = 550) {
+  if (!Number.isFinite(from) || !Number.isFinite(to) || from === to) {
+    el.textContent = formatFn(to);
+    return;
+  }
+  const start = performance.now();
+  const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+  function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    el.textContent = formatFn(from + (to - from) * easeOutCubic(t));
+    if (t < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
 function renderStaticKpis(bp) {
   const grid = document.getElementById('kpiGridStatic');
   const kpis = [
@@ -125,17 +148,29 @@ function renderYearKpis(bp, yearIndex) {
   const ca = bp.cpc.ca[yearIndex];
   const rn = bp.cpc.resultatNet[yearIndex];
   const kpis = [
-    { icon: '📈', label: "Chiffre d'affaires (HT)", value: fmtDH(ca) },
-    { icon: '💵', label: 'Résultat net', value: fmtDH(rn), neg: rn < 0 },
-    { icon: '📊', label: 'Marge nette', value: fmtPct(margeNette), neg: margeNette < 0 },
-    { icon: '🛡️', label: 'Autonomie financière', value: fmtPct(autonomieFin) },
-    { icon: '🏦', label: 'Trésorerie estimée', value: fmtDH(tresorerie), neg: tresorerie < 0 },
+    { icon: '📈', label: "Chiffre d'affaires (HT)", raw: ca, fmt: fmtDH, neg: false },
+    { icon: '💵', label: 'Résultat net', raw: rn, fmt: fmtDH, neg: rn < 0 },
+    { icon: '📊', label: 'Marge nette', raw: margeNette, fmt: fmtPct, neg: margeNette < 0 },
+    { icon: '🛡️', label: 'Autonomie financière', raw: autonomieFin, fmt: fmtPct, neg: false },
+    { icon: '🏦', label: 'Trésorerie estimée', raw: tresorerie, fmt: fmtDH, neg: tresorerie < 0 },
   ];
-  grid.innerHTML = kpis.map(kpiCardHtml).join('');
-  grid.querySelectorAll('.kpi').forEach((el) => {
-    el.classList.add('updating');
-    setTimeout(() => el.classList.remove('updating'), 350);
-  });
+
+  const existing = grid.querySelectorAll('.kpi');
+  if (existing.length === kpis.length) {
+    // Les cartes existent déjà (changement d'année) : on anime la valeur en
+    // place plutôt que de tout recréer, pour un vrai effet de "compteur".
+    kpis.forEach((k, i) => {
+      const card = existing[i];
+      card.classList.toggle('neg', Boolean(k.neg));
+      const valueEl = card.querySelector('.kpi-value');
+      const from = Number(valueEl.dataset.raw);
+      animateValue(valueEl, from, k.raw, k.fmt);
+      valueEl.dataset.raw = String(k.raw);
+    });
+  } else {
+    grid.innerHTML = kpis.map((k) => kpiCardHtml({ ...k, value: k.fmt(k.raw) })).join('');
+    grid.querySelectorAll('.kpi-value').forEach((el, i) => { el.dataset.raw = String(kpis[i].raw); });
+  }
 }
 
 // ==================== Charts ====================
@@ -176,6 +211,7 @@ function renderChartCaResultat(bp) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMATION_BASE,
       interaction: { mode: 'index', intersect: false },
       onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
       plugins: {
@@ -230,6 +266,7 @@ function renderChartFinancement(bp) {
       responsive: true,
       maintainAspectRatio: false,
       cutout: '68%',
+      animation: ANIMATION_BASE,
       plugins: {
         legend: { position: 'bottom', labels: { ...LEGEND_LABELS, boxWidth: 8, padding: 14, font: { family: 'Inter', size: 11 } } },
         tooltip: {
@@ -266,6 +303,7 @@ function renderChartTresorerie(bp) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMATION_BASE,
       onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
       plugins: {
         legend: { display: false },
@@ -302,6 +340,7 @@ function renderChartRatios(bp) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: ANIMATION_BASE,
       onClick(evt, _els, chart) { yearClickHandler(chart)(evt); },
       plugins: {
         legend: { position: 'bottom', labels: LEGEND_LABELS },

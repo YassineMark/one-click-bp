@@ -37,8 +37,11 @@ function injectStyles() {
       max-height:70vh; background:rgba(255,255,255,.9); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
       border:1px solid var(--line,#E3E9F2); border-radius:var(--radius-lg,18px);
       box-shadow:var(--shadow-lg,0 20px 48px rgba(11,37,69,.16)); display:flex; flex-direction:column; overflow:hidden;
-      font-family:Inter,system-ui,sans-serif; }
-    #cb-panel.hidden{ display:none; }
+      font-family:Inter,system-ui,sans-serif;
+      transform-origin:bottom right; opacity:0; transform:scale(.94) translateY(10px); pointer-events:none;
+      transition:opacity 180ms var(--ease-out,cubic-bezier(.23,1,.32,1)), transform 180ms var(--ease-out,cubic-bezier(.23,1,.32,1)); }
+    #cb-panel.open{ opacity:1; transform:scale(1) translateY(0); pointer-events:auto; }
+    @media (prefers-reduced-motion: reduce){ #cb-panel{ transition:opacity 120ms ease; transform:none !important; } }
     #cb-header{ background:var(--navy,#0B2545); color:#fff; padding:12px 14px; font-weight:600; font-size:14px;
       display:flex; align-items:center; justify-content:space-between; }
     #cb-header button{ background:none; border:none; color:#fff; font-size:16px; cursor:pointer; opacity:.85; transition:opacity .15s, transform .15s var(--ease-out,cubic-bezier(.23,1,.32,1)); }
@@ -86,11 +89,11 @@ function mount() {
   toggle.id = 'cb-toggle';
   toggle.type = 'button';
   toggle.title = 'Assistant One Click BP';
+  toggle.setAttribute('aria-expanded', 'false');
   toggle.textContent = '💬';
 
   const panel = document.createElement('div');
   panel.id = 'cb-panel';
-  panel.className = 'hidden';
   panel.innerHTML = `
     <div id="cb-header">
       <span>🤖 Assistant One Click BP</span>
@@ -116,11 +119,13 @@ function mount() {
   let history = loadHistory();
   for (const m of history) messagesEl.appendChild(bubbleEl(m.role, m.content));
 
-  toggle.addEventListener('click', () => {
-    panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden')) input.focus();
-  });
-  panel.querySelector('#cb-close').addEventListener('click', () => panel.classList.add('hidden'));
+  function setOpen(open) {
+    panel.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', String(open));
+    if (open) input.focus();
+  }
+  toggle.addEventListener('click', () => setOpen(!panel.classList.contains('open')));
+  panel.querySelector('#cb-close').addEventListener('click', () => setOpen(false));
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();

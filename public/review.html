@@ -27,9 +27,14 @@
   .kpi-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(178px, 1fr)); gap:14px; margin-bottom:26px; }
   .kpi{
     background:var(--card); border-radius:14px; padding:17px 19px; border:1px solid var(--line);
-    box-shadow:0 2px 10px rgba(11,37,69,.05); transition:transform .18s, box-shadow .18s, border-color .18s;
+    box-shadow:0 2px 10px rgba(11,37,69,.05);
+    transition:transform .2s var(--ease-out,cubic-bezier(.23,1,.32,1)), box-shadow .2s var(--ease-out,cubic-bezier(.23,1,.32,1)), border-color .2s;
+    animation:fadeUpIn .45s var(--ease-out,cubic-bezier(.23,1,.32,1)) backwards;
   }
   .kpi:hover{ transform:translateY(-2px); box-shadow:0 10px 24px rgba(11,37,69,.1); border-color:var(--emerald2); }
+  .kpi:nth-child(1){ animation-delay:0ms; } .kpi:nth-child(2){ animation-delay:40ms; }
+  .kpi:nth-child(3){ animation-delay:80ms; } .kpi:nth-child(4){ animation-delay:120ms; }
+  .kpi:nth-child(5){ animation-delay:160ms; } .kpi:nth-child(n+6){ animation-delay:200ms; }
   .kpi .kpi-icon{
     width:30px; height:30px; border-radius:9px; background:#EAF6EF; color:var(--emerald);
     display:flex; align-items:center; justify-content:center; font-size:14px; margin-bottom:13px;
@@ -45,9 +50,11 @@
   .year-tabs{ display:flex; gap:4px; background:var(--paper); border-radius:11px; padding:4px; }
   .year-tab{
     padding:8px 20px; border:none; background:transparent; border-radius:8px; font-weight:700;
-    font-size:13px; color:var(--muted); cursor:pointer; transition:.15s; font-family:'Space Grotesk',sans-serif;
+    font-size:13px; color:var(--muted); cursor:pointer; font-family:'Space Grotesk',sans-serif;
+    transition:color .18s ease, background .18s ease, box-shadow .18s ease, transform .15s var(--ease-out,cubic-bezier(.23,1,.32,1));
   }
   .year-tab:hover{ color:var(--navy); }
+  .year-tab:active{ transform:scale(.96); }
   .year-tab.active{ background:#fff; color:var(--navy); box-shadow:0 2px 8px rgba(11,37,69,.14); }
 
   /* ---------- KPI group labels ---------- */
@@ -55,8 +62,11 @@
     font-size:11.5px; font-weight:700; color:var(--navy2); text-transform:uppercase; letter-spacing:.5px;
     margin:0 0 11px; display:flex; align-items:center; gap:8px;
   }
-  .kpi.updating{ animation:kpi-pulse .35s ease; }
-  @keyframes kpi-pulse{ 0%{ transform:scale(1); } 45%{ transform:scale(1.035); } 100%{ transform:scale(1); } }
+  /* Entrée en fondu/glissement — une seule fois à l'arrivée sur la page,
+     jamais rejouée lors des mises à jour (changement d'année : les cartes
+     existantes sont mises à jour en place, pas recréées). */
+  @keyframes fadeUpIn{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+  @media (prefers-reduced-motion: reduce){ .kpi, .chart-card{ animation:none !important; } }
 
   /* ---------- Chart cards ---------- */
   .dashboard-charts{ display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:22px; align-items:stretch; }
@@ -64,6 +74,7 @@
   .chart-card{
     background:var(--card); border-radius:16px; padding:22px 24px 18px; border:1px solid var(--line);
     box-shadow:0 2px 12px rgba(11,37,69,.06); display:flex; flex-direction:column;
+    animation:fadeUpIn .5s var(--ease-out,cubic-bezier(.23,1,.32,1)) backwards; animation-delay:120ms;
   }
   .chart-card .cc-head{ display:flex; align-items:center; gap:9px; }
   .chart-card .cc-icon{ font-size:15px; }
