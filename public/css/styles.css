@@ -30,6 +30,15 @@
   --radius-lg:18px;
   --radius-xl:22px;
   --ease-out:cubic-bezier(.23,1,.32,1);
+
+  /* Échelle typographique — tailles et resserrement (tracking) délibérés
+     pour les titres, au lieu de valeurs ad hoc dispersées par page. */
+  --text-4xl:34px;
+  --text-3xl:28px;
+  --text-2xl:22px;
+  --text-xl:18px;
+  --tracking-tight:-.015em;
+  --tracking-tighter:-.025em;
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
@@ -41,9 +50,10 @@ body{
   min-height:100vh;
   line-height:1.5;
 }
-h1,h2,h3,h4{ font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--navy); }
+h1,h2,h3,h4{ font-family:'Space Grotesk', sans-serif; font-weight:700; color:var(--navy); letter-spacing:var(--tracking-tight); }
+h1{ font-size:var(--text-3xl); letter-spacing:var(--tracking-tighter); }
 a{ color:inherit; }
-.mono{ font-family:'IBM Plex Mono', monospace; }
+.mono{ font-family:'IBM Plex Mono', monospace; font-variant-numeric:tabular-nums; }
 button{ font-family:inherit; }
 
 /* Focus clavier visible partout (accessibilité) — remplace l'outline par
@@ -81,16 +91,24 @@ button{ font-family:inherit; }
 .topbar .logout-btn:active{ transform:scale(.96); }
 
 /* ===================== Hero ===================== */
+/* Signature visuelle : une trame de grand-livre (lignes fines) et une courbe
+   de croissance discrète en filigrane — un rappel du sujet réel de l'outil
+   (plans de financement, projections) plutôt qu'une décoration générique. */
 .hero{
   background:linear-gradient(110deg, var(--navy) 0%, var(--navy2) 65%, #0F9D58 160%);
-  border-radius:18px; padding:34px 38px; color:#fff; margin-bottom:26px;
+  border-radius:var(--radius-lg); padding:34px 38px; color:#fff; margin-bottom:26px;
   position:relative; overflow:hidden;
+}
+.hero::before{
+  content:""; position:absolute; inset:0; opacity:.9; pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 640 320'%3E%3Cg stroke='%23FFFFFF' stroke-width='1' opacity='0.07'%3E%3Cline x1='0' y1='80' x2='640' y2='80'/%3E%3Cline x1='0' y1='160' x2='640' y2='160'/%3E%3Cline x1='0' y1='240' x2='640' y2='240'/%3E%3Cline x1='160' y1='0' x2='160' y2='320'/%3E%3Cline x1='320' y1='0' x2='320' y2='320'/%3E%3Cline x1='480' y1='0' x2='480' y2='320'/%3E%3C/g%3E%3Cpolyline points='40,260 140,232 220,248 300,182 380,202 460,124 540,144 610,72' fill='none' stroke='%230BC07A' stroke-width='2.5' opacity='0.4'/%3E%3Ccircle cx='610' cy='72' r='4.5' fill='%230BC07A' opacity='0.55'/%3E%3C/svg%3E");
+  background-size:cover; background-position:center;
 }
 .hero::after{
   content:""; position:absolute; right:-60px; top:-60px; width:240px; height:240px;
-  border-radius:50%; background:radial-gradient(circle, rgba(15,192,122,.35), transparent 70%);
+  border-radius:50%; background:radial-gradient(circle, rgba(15,192,122,.28), transparent 70%);
 }
-.hero h1{ color:#fff; font-size:30px; letter-spacing:.3px; margin-bottom:8px; position:relative; }
+.hero h1{ color:#fff; font-size:var(--text-4xl); letter-spacing:var(--tracking-tighter); margin-bottom:8px; position:relative; }
 .hero p{ color:#BFD7F5; font-size:15px; max-width:640px; line-height:1.55; position:relative; }
 .hero .badge-row{ margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; position:relative; }
 .pill{
